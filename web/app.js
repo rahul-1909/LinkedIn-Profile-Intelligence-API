@@ -1,16 +1,10 @@
 /**
- * LinkedIn Profile Viewer — static UI for the FastAPI backend.
- *
- * API base resolution (first match wins):
- *   1. ?api= query param (also saved to localStorage)
- *   2. localStorage key "linkedin_profile_api_base"
- *   3. DEFAULT_API_BASE below
- *
- * Local: open index.html?api=http://localhost:8000
+ * LinkedIn Profile Viewer — Apple Liquid Glass UI
+ * Built on FastAPI + LinkedIn Voyager REST.
  */
 
 const DEFAULT_API_BASE = window.location.origin;
-const STORAGE_KEY = "profile_lens_api_base";
+const STORAGE_KEY = "profile_intelligence_api_base";
 
 const MONTHS = [
   "",
@@ -29,13 +23,13 @@ const MONTHS = [
 ];
 
 const ERROR_MESSAGES = {
-  configuration_error: "The API credentials are not configured in Vercel yet.",
-  invalid_url: "That doesn’t look like a valid LinkedIn profile URL.",
-  unauthorized: "Session cookies expired. Update LI_AT / JSESSIONID on the API server.",
-  forbidden: "LinkedIn denied access for this request.",
-  not_found: "No LinkedIn profile found for that URL.",
-  rate_limit_exceeded: "Rate limit hit. Wait a moment and try again.",
-  upstream_error: "Upstream LinkedIn request failed. Try again shortly.",
+  configuration_error: "API credentials are being resolved. Please try again in a moment.",
+  invalid_url: "Please enter a valid LinkedIn profile URL or vanity username.",
+  unauthorized: "LinkedIn session expired. Please refresh session credentials.",
+  forbidden: "Access restricted by LinkedIn for this profile.",
+  not_found: "LinkedIn profile not found. Please verify the URL or username.",
+  rate_limit_exceeded: "Rate limit reached. Please wait a moment and retry.",
+  upstream_error: "Unable to retrieve profile from LinkedIn. Please try again.",
 };
 
 function resolveApiBase() {
@@ -88,6 +82,7 @@ const els = {
   educations: document.getElementById("educations"),
   sectionSkills: document.getElementById("section-skills"),
   skills: document.getElementById("skills"),
+  skillsBadge: document.getElementById("skills-badge"),
   sectionCerts: document.getElementById("section-certs"),
   certifications: document.getElementById("certifications"),
   sectionLanguages: document.getElementById("section-languages"),
@@ -136,69 +131,69 @@ function initials(first, last) {
 
 function setLoading(loading) {
   els.submitBtn.disabled = loading;
-  els.btnLabel.textContent = loading ? "Fetching…" : "Fetch profile";
+  els.btnLabel.textContent = loading ? "Fetching…" : "Fetch Profile";
   els.btnSpinner.classList.toggle("hidden", !loading);
   els.btnArrow.classList.toggle("hidden", loading);
-  els.input.setAttribute("aria-busy", String(loading));
 }
 
 function showError(message) {
   els.errorBanner.textContent = message;
   els.errorBanner.classList.remove("hidden");
-  els.input.setAttribute("aria-invalid", "true");
+  els.errorBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function hideError() {
   els.errorBanner.classList.add("hidden");
   els.errorBanner.textContent = "";
-  els.input.removeAttribute("aria-invalid");
 }
 
-function friendlyError(status, body) {
-  if (body && body.error && ERROR_MESSAGES[body.error]) {
-    return ERROR_MESSAGES[body.error];
+function friendlyError(status, payload) {
+  if (payload && payload.error && ERROR_MESSAGES[payload.error]) {
+    return payload.detail
+      ? `${ERROR_MESSAGES[payload.error]} (${payload.detail})`
+      : ERROR_MESSAGES[payload.error];
   }
-  if (body && body.detail) return body.detail;
-  if (status === 400) return ERROR_MESSAGES.invalid_url;
-  if (status === 401 || status === 403) return ERROR_MESSAGES.unauthorized;
+  if (payload && payload.detail) {
+    if (typeof payload.detail === "string") return payload.detail;
+    if (Array.isArray(payload.detail)) {
+      return payload.detail.map((d) => d.msg || JSON.stringify(d)).join(", ");
+    }
+  }
   if (status === 404) return ERROR_MESSAGES.not_found;
   if (status === 429) return ERROR_MESSAGES.rate_limit_exceeded;
   if (status >= 500) return ERROR_MESSAGES.upstream_error;
-  return `Request failed (${status}).`;
+  return `Error (${status}). Please check the URL and try again.`;
 }
 
-function toggleSection(el, show) {
-  el.classList.toggle("hidden", !show);
+function toggleSection(element, visible) {
+  if (!element) return;
+  element.classList.toggle("hidden", !visible);
 }
 
 function renderHeader(profile) {
-  const name = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Unknown";
-  els.fullName.textContent = name;
-  els.headline.textContent = profile.headline || "";
-
   if (profile.cover_picture_url) {
     els.cover.style.backgroundImage = `url("${profile.cover_picture_url}")`;
   } else {
     els.cover.style.backgroundImage = "";
   }
 
-  els.avatar.innerHTML = "";
+  const name = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+  els.fullName.textContent = name || profile.public_identifier || "LinkedIn Member";
+
   if (profile.profile_picture_url) {
-    const img = document.createElement("img");
-    img.src = profile.profile_picture_url;
-    img.alt = name;
-    img.className = "h-full w-full object-cover";
-    img.onerror = () => {
-      els.avatar.textContent = initials(profile.first_name, profile.last_name);
-    };
-    els.avatar.appendChild(img);
+    els.avatar.innerHTML = `<img src="${escapeHtml(profile.profile_picture_url)}" alt="${escapeHtml(name)}" class="h-full w-full object-cover rounded-full" />`;
   } else {
     els.avatar.textContent = initials(profile.first_name, profile.last_name);
   }
 
-  const loc = profile.location && profile.location.display;
+  els.headline.textContent = profile.headline || "";
+  toggleSection(els.headline, Boolean(profile.headline));
+
+  const loc = profile.location ? profile.location.display : "";
   if (loc) {
-    els.location.textContent = loc;
+    const locSpan = els.location.querySelector("span");
+    if (locSpan) locSpan.textContent = loc;
+    else els.location.textContent = loc;
     els.location.classList.remove("hidden");
   } else {
     els.location.classList.add("hidden");
@@ -222,7 +217,6 @@ function renderAbout(summary) {
   els.summary.classList.add("summary-collapsed");
   toggleSection(els.sectionAbout, true);
 
-  // Defer clamp check until layout
   requestAnimationFrame(() => {
     const needsToggle = els.summary.scrollHeight > els.summary.clientHeight + 4;
     els.summaryToggle.classList.toggle("hidden", !needsToggle);
@@ -249,14 +243,17 @@ function renderPositions(positions) {
       const employment = escapeHtml(p.employment_type || "");
       const meta = [dates, location, employment].filter(Boolean).join(" · ");
       const desc = p.description
-        ? `<p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">${escapeHtml(p.description)}</p>`
+        ? `<p class="mt-3 whitespace-pre-wrap text-xs sm:text-sm leading-relaxed text-slate-600 font-normal pl-3 border-l-2 border-apple-blue/20">${escapeHtml(p.description)}</p>`
         : "";
       return `
-        <article class="relative border-b border-slate-100 pb-6 pl-6 last:border-0 last:pb-0">
-          <span class="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full bg-brand-500 ring-4 ring-brand-50" aria-hidden="true"></span>
-          <h4 class="font-bold text-slate-900">${title}</h4>
-          ${company ? `<p class="mt-0.5 text-sm font-medium text-slate-700">${company}</p>` : ""}
-          ${meta ? `<p class="mt-1 text-xs font-medium text-slate-400">${meta}</p>` : ""}
+        <article class="liquid-glass-subtle rounded-2xl p-4 sm:p-5 relative transition hover:bg-white/80">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-3">
+            <div>
+              <h4 class="font-bold text-apple-dark text-sm sm:text-base">${title}</h4>
+              ${company ? `<p class="text-xs font-medium text-slate-700 mt-0.5">${company}</p>` : ""}
+            </div>
+            ${meta ? `<span class="liquid-pill px-3 py-1 text-[11px] font-medium text-apple-gray shrink-0 rounded-full self-start">${meta}</span>` : ""}
+          </div>
           ${desc}
         </article>
       `;
@@ -274,23 +271,26 @@ function renderEducations(educations) {
 
   els.educations.innerHTML = educations
     .map((e) => {
-      const school = escapeHtml(e.school_name || "School");
-      const degreeBits = [e.degree_name, e.field_of_study].filter(Boolean).join(", ");
+      const school = escapeHtml(e.school_name || "Institution");
+      const degreeBits = [e.degree_name, e.field_of_study].filter(Boolean).join(" — ");
       const dates = escapeHtml(formatDateRange(e.date_range));
       const grade = e.grade ? `Grade: ${escapeHtml(e.grade)}` : "";
       const meta = [dates, grade].filter(Boolean).join(" · ");
       const activities = e.activities
-        ? `<p class="mt-1 text-sm text-slate-600">${escapeHtml(e.activities)}</p>`
+        ? `<p class="mt-1 text-xs text-slate-600">${escapeHtml(e.activities)}</p>`
         : "";
       const desc = e.description
-        ? `<p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">${escapeHtml(e.description)}</p>`
+        ? `<p class="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">${escapeHtml(e.description)}</p>`
         : "";
       return `
-        <article class="relative border-b border-slate-100 pb-6 pl-6 last:border-0 last:pb-0">
-          <span class="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full bg-indigo-500 ring-4 ring-indigo-50" aria-hidden="true"></span>
-          <h4 class="font-bold text-slate-900">${school}</h4>
-          ${degreeBits ? `<p class="mt-0.5 text-sm text-slate-700">${escapeHtml(degreeBits)}</p>` : ""}
-          ${meta ? `<p class="mt-1 text-xs font-medium text-slate-400">${meta}</p>` : ""}
+        <article class="liquid-glass-subtle rounded-2xl p-4 sm:p-5 relative transition hover:bg-white/80">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-3">
+            <div>
+              <h4 class="font-bold text-apple-dark text-sm">${school}</h4>
+              ${degreeBits ? `<p class="text-xs text-slate-700 mt-0.5">${escapeHtml(degreeBits)}</p>` : ""}
+            </div>
+            ${meta ? `<span class="liquid-pill px-3 py-1 text-[11px] font-medium text-apple-gray shrink-0 rounded-full self-start">${meta}</span>` : ""}
+          </div>
           ${activities}
           ${desc}
         </article>
@@ -307,17 +307,21 @@ function renderSkills(skills, skillsTotal) {
     return;
   }
 
+  if (els.skillsBadge) {
+    els.skillsBadge.textContent = skillsTotal ? `${skillsTotal} Total` : `${skills.length}`;
+  }
+
   const chips = skills
     .map(
       (s) =>
-        `<span class="rounded-lg border border-brand-100 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700">${escapeHtml(s.name)}</span>`,
+        `<span class="liquid-pill px-3 py-1.5 text-xs font-medium text-slate-800 rounded-full cursor-default">${escapeHtml(s.name)}</span>`,
     )
     .join("");
 
   let more = "";
   if (typeof skillsTotal === "number" && skillsTotal > skills.length) {
     const remaining = skillsTotal - skills.length;
-    more = `<span class="rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600">+${remaining} more</span>`;
+    more = `<span class="liquid-pill px-3 py-1.5 text-xs font-semibold text-apple-blue rounded-full">+${remaining} more</span>`;
   }
 
   els.skills.innerHTML = chips + more;
@@ -334,18 +338,20 @@ function renderCertifications(certs) {
     .map((c) => {
       const name = escapeHtml(c.name || "Certification");
       const title = c.url
-        ? `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-brand-600 hover:underline">${name} ↗</a>`
-        : `<span class="text-sm font-bold text-slate-900">${name}</span>`;
+        ? `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-apple-blue hover:underline">${name} ↗</a>`
+        : `<span class="text-xs font-semibold text-apple-dark">${name}</span>`;
       const authority = c.authority
-        ? `<p class="text-sm text-slate-700">${escapeHtml(c.authority)}</p>`
+        ? `<p class="text-[11px] text-apple-gray mt-0.5">${escapeHtml(c.authority)}</p>`
         : "";
       const issued = c.issue_date
-        ? `<p class="mt-0.5 text-xs text-slate-500">Issued ${escapeHtml(c.issue_date)}</p>`
+        ? `<span class="liquid-pill px-2.5 py-0.5 text-[10px] font-medium text-slate-500 rounded-full shrink-0">${escapeHtml(c.issue_date)}</span>`
         : "";
       return `
-        <article class="border-b border-slate-100 pb-4 last:border-0 last:pb-0">
-          ${title}
-          ${authority}
+        <article class="liquid-glass-subtle rounded-2xl p-3.5 transition hover:bg-white/80 flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            ${title}
+            ${authority}
+          </div>
           ${issued}
         </article>
       `;
@@ -365,9 +371,14 @@ function renderLanguages(languages) {
     .map((l) => {
       const name = escapeHtml(l.name || "Language");
       const proficiency = l.proficiency
-        ? `<span class="text-slate-500"> — ${escapeHtml(l.proficiency)}</span>`
+        ? `<span class="text-apple-gray text-[11px]">${escapeHtml(l.proficiency)}</span>`
         : "";
-      return `<p class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800">${name}${proficiency}</p>`;
+      return `
+        <div class="liquid-pill px-3.5 py-2 rounded-xl text-xs font-medium text-slate-800 flex items-center justify-between">
+          <span>${name}</span>
+          ${proficiency}
+        </div>
+      `;
     })
     .join("");
 
@@ -382,21 +393,22 @@ function renderTreasury(items) {
 
   els.treasury.innerHTML = items
     .map((t) => {
-      const title = escapeHtml(t.title || t.url || "Media");
+      const title = escapeHtml(t.title || t.url || "Document");
       const link = t.url
-        ? `<a href="${escapeHtml(t.url)}" target="_blank" rel="noopener noreferrer" class="font-semibold text-brand-600 hover:underline">${title} ↗</a>`
-        : `<span class="font-medium text-slate-900">${title}</span>`;
+        ? `<a href="${escapeHtml(t.url)}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-apple-blue hover:underline block truncate">${title} ↗</a>`
+        : `<span class="text-xs font-medium text-slate-900 block truncate">${title}</span>`;
       const kind = t.kind
-        ? `<span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium uppercase tracking-wide text-slate-600">${escapeHtml(t.kind)}</span>`
-        : "";
-      const provider = t.provider
-        ? `<span class="text-xs text-slate-500">${escapeHtml(t.provider)}</span>`
+        ? `<span class="liquid-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 rounded">${escapeHtml(t.kind)}</span>`
         : "";
       return `
-        <div class="flex flex-wrap items-center gap-2 text-sm">
-          ${link}
+        <div class="liquid-glass-subtle rounded-2xl p-3.5 flex items-center justify-between gap-3 transition hover:bg-white/80">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-apple-blue text-xs font-bold">📄</span>
+            <div class="min-w-0">
+              ${link}
+            </div>
+          </div>
           ${kind}
-          ${provider}
         </div>
       `;
     })
@@ -417,7 +429,7 @@ function renderProfile(profile) {
 
   if (profile.fetched_at) {
     const d = new Date(profile.fetched_at);
-    els.fetchedAt.textContent = `Fetched ${d.toLocaleString()}`;
+    els.fetchedAt.textContent = `Extracted at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Cached via Voyager Engine`;
   } else {
     els.fetchedAt.textContent = "";
   }
@@ -453,7 +465,7 @@ async function fetchProfile(url) {
     renderProfile(body);
   } catch {
     showError(
-      `Could not reach the API at ${API_BASE}. Is the server running? Pass ?api=http://localhost:8000 to override.`,
+      `Could not connect to the profile service at ${API_BASE}. Please check your connection and try again.`,
     );
   } finally {
     setLoading(false);
@@ -464,14 +476,14 @@ els.form.addEventListener("submit", (event) => {
   event.preventDefault();
   const url = els.input.value.trim();
   if (!url) {
-    showError("Paste a LinkedIn profile URL or vanity slug first.");
+    showError("Please paste a LinkedIn profile URL or vanity handle first.");
     return;
   }
   fetchProfile(url);
 });
 
 els.sampleBtn.addEventListener("click", () => {
-  els.input.value = "https://www.linkedin.com/in/briony-sayani/";
+  els.input.value = "https://www.linkedin.com/in/nallarahulteja";
   hideError();
   els.input.focus();
   els.input.select();
