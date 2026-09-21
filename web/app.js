@@ -1,11 +1,12 @@
 /**
- * LinkedIn Profile Intelligence API - Frontend Client
- * Developed by Rahul (rahul-1909)
+ * IntelLens — LinkedIn Profile Intelligence Engine
+ * Modern Cyber-Glass Client Logic
+ * Author: Rahul (rahul-1909)
  */
 
 const API_BASE = window.location.origin.replace(/\/$/, "");
-const STORAGE_LI_AT = "lpi_custom_li_at";
-const STORAGE_JSESSIONID = "lpi_custom_jsessionid";
+const STORAGE_LI_AT = "intellens_custom_li_at";
+const STORAGE_JSESSIONID = "intellens_custom_jsessionid";
 
 let currentProfile = null;
 let currentIntelligence = null;
@@ -14,86 +15,89 @@ const MONTH_NAMES = [
   "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
 
-// DOM Element bindings
+// DOM references
 const els = {
-  form: document.getElementById("search-form"),
-  input: document.getElementById("url-input"),
-  submitBtn: document.getElementById("submit-btn"),
-  btnText: document.getElementById("btn-text"),
-  btnSpinner: document.getElementById("btn-spinner"),
-  errorAlert: document.getElementById("error-alert"),
-  welcomeFeatures: document.getElementById("welcome-features"),
-  resultContainer: document.getElementById("result-container"),
-  modePill: document.getElementById("mode-pill"),
-  modeLabel: document.getElementById("mode-label"),
+  form: document.getElementById("profile-form"),
+  input: document.getElementById("profile-query"),
+  btnAnalyze: document.getElementById("btn-analyze"),
+  analyzeLabel: document.getElementById("analyze-label"),
+  analyzeSpinner: document.getElementById("analyze-spinner"),
+  analyzeArrow: document.getElementById("analyze-arrow"),
+  errorToast: document.getElementById("error-toast"),
+  errorToastMsg: document.getElementById("error-toast-msg"),
+  idleShowcase: document.getElementById("idle-showcase"),
+  activeProfileView: document.getElementById("active-profile-view"),
+  modeBadge: document.getElementById("mode-badge"),
+  modeBadgeLabel: document.getElementById("mode-badge-label"),
 
-  // Profile Header Card
-  cardCover: document.getElementById("card-cover"),
-  cardAvatar: document.getElementById("card-avatar"),
-  cardName: document.getElementById("card-name"),
-  cardHeadline: document.getElementById("card-headline"),
-  cardLocation: document.getElementById("card-location"),
-  locText: document.getElementById("loc-text"),
-  cardLinkedinLink: document.getElementById("card-linkedin-link"),
+  // Identity Header
+  pCover: document.getElementById("p-cover"),
+  pAvatar: document.getElementById("p-avatar"),
+  pName: document.getElementById("p-name"),
+  pSeniorityBadge: document.getElementById("p-seniority-badge"),
+  pLocation: document.getElementById("p-location"),
+  pLocationText: document.getElementById("p-location-text"),
+  pLinkedinLink: document.getElementById("p-linkedin-link"),
+  pHeadline: document.getElementById("p-headline"),
 
-  // Intelligence Metrics
-  statScore: document.getElementById("stat-score"),
-  statExperience: document.getElementById("stat-experience"),
-  statSeniority: document.getElementById("stat-seniority"),
-  statTenure: document.getElementById("stat-tenure"),
-  recruiterPitchText: document.getElementById("recruiter-pitch-text"),
+  // KPIs & AI Briefing
+  kpiScore: document.getElementById("kpi-score"),
+  kpiExperience: document.getElementById("kpi-experience"),
+  kpiTenure: document.getElementById("kpi-tenure"),
+  kpiStability: document.getElementById("kpi-stability"),
+  pRecruiterBrief: document.getElementById("p-recruiter-brief"),
 
-  // Sections
-  sectionAbout: document.getElementById("section-about"),
-  cardSummary: document.getElementById("card-summary"),
-  summaryToggle: document.getElementById("summary-toggle"),
-  positionsList: document.getElementById("positions-list"),
-  educationsList: document.getElementById("educations-list"),
-  skillsCloud: document.getElementById("skills-cloud"),
-  sectionCerts: document.getElementById("section-certs"),
-  certsList: document.getElementById("certs-list"),
-  sectionLanguages: document.getElementById("section-languages"),
-  languagesList: document.getElementById("languages-list"),
-  sectionMedia: document.getElementById("section-media"),
-  mediaList: document.getElementById("media-list"),
+  // Actions
+  btnCopyJson: document.getElementById("btn-action-copy-json"),
+  btnExportMd: document.getElementById("btn-action-export-md"),
+  btnDownloadJson: document.getElementById("btn-action-download-json"),
+  btnCopyJsonTab: document.getElementById("btn-copy-json-tab"),
 
-  // Tabs & Panes
-  tabOverview: document.getElementById("tab-overview"),
-  tabIntel: document.getElementById("tab-intel"),
-  tabJson: document.getElementById("tab-json"),
-  tabCode: document.getElementById("tab-code"),
-  paneOverview: document.getElementById("pane-overview"),
-  paneIntel: document.getElementById("pane-intel"),
+  // Tabs
+  tabTimeline: document.getElementById("view-tab-timeline"),
+  tabIntelligence: document.getElementById("view-tab-intelligence"),
+  tabJson: document.getElementById("view-tab-json"),
+  tabCode: document.getElementById("view-tab-code"),
+  paneTimeline: document.getElementById("pane-timeline"),
+  paneIntelligence: document.getElementById("pane-intelligence"),
   paneJson: document.getElementById("pane-json"),
   paneCode: document.getElementById("pane-code"),
 
-  // Intel Tab
-  tipsList: document.getElementById("tips-list"),
-  skillCategoriesContainer: document.getElementById("skill-categories-container"),
+  // Content Sections
+  pSectionAbout: document.getElementById("p-section-about"),
+  pSummary: document.getElementById("p-summary"),
+  btnSummaryToggle: document.getElementById("btn-summary-toggle"),
+  pPositionsContainer: document.getElementById("p-positions-container"),
+  pEducationsContainer: document.getElementById("p-educations-container"),
+  pSkillsCount: document.getElementById("p-skills-count"),
+  pSkillsCloud: document.getElementById("p-skills-cloud"),
+  pSectionCerts: document.getElementById("p-section-certs"),
+  pCertsContainer: document.getElementById("p-certs-container"),
+  pSectionLanguages: document.getElementById("p-section-languages"),
+  pLanguagesContainer: document.getElementById("p-languages-container"),
+  pSectionMedia: document.getElementById("p-section-media"),
+  pMediaContainer: document.getElementById("p-media-container"),
 
-  // JSON Tab
-  jsonViewer: document.getElementById("json-viewer"),
-  btnCopyJson: document.getElementById("btn-copy-json"),
-  btnCopyJsonTab: document.getElementById("btn-copy-json-tab"),
-  btnExportMd: document.getElementById("btn-export-md"),
-  btnDownloadJson: document.getElementById("btn-download-json"),
+  // Intelligence Pane
+  pIntelTips: document.getElementById("p-intel-tips"),
+  pIntelClusters: document.getElementById("p-intel-clusters"),
 
-  // Code Tab
-  codeCurl: document.getElementById("code-curl"),
-  codePython: document.getElementById("code-python"),
-  codeJs: document.getElementById("code-js"),
+  // Code & Raw Display
+  rawJsonDisplay: document.getElementById("raw-json-display"),
+  snippetCurl: document.getElementById("snippet-curl"),
+  snippetPython: document.getElementById("snippet-python"),
+  snippetJs: document.getElementById("snippet-js"),
 
-  // Settings Modal
-  settingsModal: document.getElementById("settings-modal"),
-  openSettingsBtn: document.getElementById("open-settings-btn"),
-  closeSettingsBtn: document.getElementById("close-settings-btn"),
-  inputLiAt: document.getElementById("input-li-at"),
-  inputJsessionid: document.getElementById("input-jsessionid"),
-  btnSaveCreds: document.getElementById("btn-save-creds"),
-  btnClearCreds: document.getElementById("btn-clear-creds"),
+  // Credentials Modal
+  modalCredentials: document.getElementById("modal-credentials"),
+  btnOpenCredentials: document.getElementById("btn-open-credentials"),
+  btnCloseModal: document.getElementById("btn-close-modal"),
+  modalLiAt: document.getElementById("modal-li-at"),
+  modalJsessionid: document.getElementById("modal-jsessionid"),
+  btnSaveTokens: document.getElementById("btn-save-tokens"),
+  btnClearTokens: document.getElementById("btn-clear-tokens"),
 };
 
-// Utilities
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)
@@ -106,27 +110,20 @@ function escapeHtml(str) {
 
 function formatDateRange(range) {
   if (!range) return "";
-  const startYear = range.start_year;
-  const startMonth = range.start_month ? MONTH_NAMES[range.start_month] : "";
-  const start = [startMonth, startYear].filter(Boolean).join(" ");
+  const start = [MONTH_NAMES[range.start_month], range.start_year].filter(Boolean).join(" ");
   if (!start) return "";
-
-  if (range.is_current) {
-    return `${start} – Present`;
-  }
-  const endYear = range.end_year;
-  const endMonth = range.end_month ? MONTH_NAMES[range.end_month] : "";
-  const end = [endMonth, endYear].filter(Boolean).join(" ");
+  if (range.is_current) return `${start} – Present`;
+  const end = [MONTH_NAMES[range.end_month], range.end_year].filter(Boolean).join(" ");
   return end ? `${start} – ${end}` : start;
 }
 
 function getInitials(first, last) {
-  const f = (first || "").trim().charAt(0);
-  const l = (last || "").trim().charAt(0);
-  return (f + l).toUpperCase() || "LI";
+  const a = (first || "").trim().charAt(0);
+  const b = (last || "").trim().charAt(0);
+  return (a + b).toUpperCase() || "LI";
 }
 
-function getHeaders() {
+function getClientHeaders() {
   const headers = { Accept: "application/json" };
   const customLiAt = localStorage.getItem(STORAGE_LI_AT);
   const customJsessionid = localStorage.getItem(STORAGE_JSESSIONID);
@@ -135,261 +132,267 @@ function getHeaders() {
   return headers;
 }
 
-// Check Backend Session Status
-async function checkStatus() {
+async function verifySessionMode() {
   try {
     const res = await fetch(`${API_BASE}/api/session/status`);
     if (res.ok) {
       const data = await res.json();
       const customLiAt = localStorage.getItem(STORAGE_LI_AT);
       if (customLiAt) {
-        els.modeLabel.textContent = "Custom Session Active";
-        els.modePill.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200";
+        els.modeBadgeLabel.textContent = "CUSTOM LIVE SESSION ACTIVE";
+        els.modeBadge.className = "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-cyan-500/10 text-neon-cyan border border-cyan-500/30";
       } else if (data.configured) {
-        els.modeLabel.textContent = "Live Voyager REST Connected";
-        els.modePill.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200";
+        els.modeBadgeLabel.textContent = "LIVE VOYAGER CONNECTED";
+        els.modeBadge.className = "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
       } else {
-        els.modeLabel.textContent = "Demo Sandbox Active";
-        els.modePill.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200";
+        els.modeBadgeLabel.textContent = "SANDBOX DEMO MODE";
+        els.modeBadge.className = "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/30";
       }
     }
   } catch (err) {
-    console.warn("Could not check status:", err);
+    console.warn("Could not check server status:", err);
   }
 }
 
-// Tab Switching
-function switchTab(tabName) {
+// Tab Switching Mechanism
+function switchView(tabKey) {
   const tabs = [
-    { id: "overview", btn: els.tabOverview, pane: els.paneOverview },
-    { id: "intel", btn: els.tabIntel, pane: els.paneIntel },
-    { id: "json", btn: els.tabJson, pane: els.paneJson },
-    { id: "code", btn: els.tabCode, pane: els.paneCode },
+    { key: "timeline", btn: els.tabTimeline, pane: els.paneTimeline },
+    { key: "intelligence", btn: els.tabIntelligence, pane: els.paneIntelligence },
+    { key: "json", btn: els.tabJson, pane: els.paneJson },
+    { key: "code", btn: els.tabCode, pane: els.paneCode },
   ];
 
   tabs.forEach((t) => {
-    if (t.id === tabName) {
-      t.btn.className = "tab-btn px-4 py-2 text-sm font-bold border-b-2 border-brand-600 text-brand-600";
+    if (t.key === tabKey) {
+      t.btn.className = "view-tab px-4 py-2.5 font-bold border-b-2 border-neon-cyan text-neon-cyan";
       t.pane.classList.remove("hidden");
     } else {
-      t.btn.className = "tab-btn px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800";
+      t.btn.className = "view-tab px-4 py-2.5 font-semibold text-slate-400 hover:text-white";
       t.pane.classList.add("hidden");
     }
   });
 }
 
-els.tabOverview.onclick = () => switchTab("overview");
-els.tabIntel.onclick = () => switchTab("intel");
-els.tabJson.onclick = () => switchTab("json");
-els.tabCode.onclick = () => switchTab("code");
+els.tabTimeline.onclick = () => switchView("timeline");
+els.tabIntelligence.onclick = () => switchView("intelligence");
+els.tabJson.onclick = () => switchView("json");
+els.tabCode.onclick = () => switchView("code");
 
-// Render Functions
-function renderProfile(profile, intelligence) {
+// Main Render Function
+function renderProfileData(profile, intelligence) {
   currentProfile = profile;
   currentIntelligence = intelligence;
 
-  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Professional";
-  els.cardName.textContent = fullName;
-  els.cardHeadline.textContent = profile.headline || "LinkedIn Member";
+  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Candidate";
+  els.pName.textContent = fullName;
+  els.pHeadline.textContent = profile.headline || "LinkedIn Member";
 
   // Cover image
   if (profile.cover_picture_url) {
-    els.cardCover.style.backgroundImage = `url("${profile.cover_picture_url}")`;
+    els.pCover.style.backgroundImage = `url("${profile.cover_picture_url}")`;
   } else {
-    els.cardCover.style.backgroundImage = "";
+    els.pCover.style.backgroundImage = "";
   }
 
   // Avatar
-  els.cardAvatar.innerHTML = "";
+  els.pAvatar.innerHTML = "";
   if (profile.profile_picture_url) {
     const img = document.createElement("img");
     img.src = profile.profile_picture_url;
     img.alt = fullName;
     img.className = "h-full w-full object-cover";
     img.onerror = () => {
-      els.cardAvatar.textContent = getInitials(profile.first_name, profile.last_name);
+      els.pAvatar.textContent = getInitials(profile.first_name, profile.last_name);
     };
-    els.cardAvatar.appendChild(img);
+    els.pAvatar.appendChild(img);
   } else {
-    els.cardAvatar.textContent = getInitials(profile.first_name, profile.last_name);
+    els.pAvatar.textContent = getInitials(profile.first_name, profile.last_name);
   }
 
   // Location
-  const locDisplay = profile.location?.display;
-  if (locDisplay) {
-    els.locText.textContent = locDisplay;
-    els.cardLocation.classList.remove("hidden");
+  if (profile.location?.display) {
+    els.pLocationText.textContent = profile.location.display;
+    els.pLocation.classList.remove("hidden");
   } else {
-    els.cardLocation.classList.add("hidden");
+    els.pLocation.classList.add("hidden");
   }
 
-  // Profile URL
+  // LinkedIn link
   if (profile.profile_url) {
-    els.cardLinkedinLink.href = profile.profile_url;
-    els.cardLinkedinLink.classList.remove("hidden");
+    els.pLinkedinLink.href = profile.profile_url;
+    els.pLinkedinLink.classList.remove("hidden");
   } else {
-    els.cardLinkedinLink.classList.add("hidden");
+    els.pLinkedinLink.classList.add("hidden");
   }
 
-  // Intelligence Metrics Bar
+  // Intelligence Metrics & Telemetry
   if (intelligence) {
-    els.statScore.textContent = `${intelligence.completeness_score}% (${intelligence.profile_strength})`;
-    els.statExperience.textContent = `${intelligence.career_metrics.total_experience_years} yrs`;
-    els.statSeniority.textContent = intelligence.career_metrics.seniority_level;
-    els.statTenure.textContent = `${intelligence.career_metrics.average_tenure_years} yrs avg`;
-    els.recruiterPitchText.textContent = intelligence.recruiter_pitch;
+    const m = intelligence.career_metrics;
+    els.pSeniorityBadge.textContent = m.seniority_level;
+    els.kpiScore.textContent = `${intelligence.completeness_score}%`;
+    els.kpiExperience.textContent = `${m.total_experience_years} yrs`;
+    els.kpiTenure.textContent = `${m.average_tenure_years} yrs`;
+    els.kpiStability.textContent = m.stability_index;
+    els.pRecruiterBrief.textContent = intelligence.recruiter_pitch;
 
     // Render Tips
-    els.tipsList.innerHTML = intelligence.optimization_suggestions.map(
-      (tip) => `<div class="flex items-start gap-2 text-xs text-slate-700 bg-amber-50/70 border border-amber-200/80 p-3 rounded-xl"><span class="text-amber-500 font-bold">💡</span><span>${escapeHtml(tip)}</span></div>`
-    ).join("") || `<p class="text-xs text-emerald-600 font-semibold">🎉 Outstanding profile! No critical optimization recommendations.</p>`;
+    els.pIntelTips.innerHTML = intelligence.optimization_suggestions.map(
+      (tip) => `
+        <div class="glass-panel p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-300 text-xs flex items-start gap-2.5">
+          <span class="text-base leading-none">💡</span>
+          <span>${escapeHtml(tip)}</span>
+        </div>
+      `
+    ).join("") || `<p class="text-xs text-emerald-400 font-mono">Profile is optimized with highest telemetry fidelity!</p>`;
 
-    // Render Skill Clusters
-    els.skillCategoriesContainer.innerHTML = intelligence.skill_categories.map(
+    // Render Skill Categories
+    els.pIntelClusters.innerHTML = intelligence.skill_categories.map(
       (cat) => `
-        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-slate-800">${escapeHtml(cat.category)}</span>
-            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">${cat.count}</span>
+        <div class="glass-panel p-4 rounded-xl border-white/5 space-y-2">
+          <div class="flex items-center justify-between text-xs font-mono">
+            <span class="font-bold text-white">${escapeHtml(cat.category)}</span>
+            <span class="px-2 py-0.5 rounded bg-space-950 text-neon-cyan border border-cyan-500/20">${cat.count}</span>
           </div>
-          <div class="flex flex-wrap gap-1">
-            ${cat.skills.map((s) => `<span class="px-2 py-0.5 rounded bg-white border border-slate-200 text-[11px] font-medium text-slate-700">${escapeHtml(s)}</span>`).join("")}
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            ${cat.skills.map((s) => `<span class="px-2 py-0.5 rounded bg-space-950/80 border border-white/5 text-[11px] text-slate-300 font-mono">${escapeHtml(s)}</span>`).join("")}
           </div>
         </div>
       `
-    ).join("") || `<p class="text-xs text-slate-400">No skill categories available.</p>`;
+    ).join("") || `<p class="text-xs text-slate-500 font-mono">No skills clusters computed.</p>`;
   }
 
-  // Summary / About
+  // Summary / Bio
   if (profile.summary && profile.summary.trim()) {
-    els.cardSummary.textContent = profile.summary;
-    els.sectionAbout.classList.remove("hidden");
-    els.summaryToggle.classList.toggle("hidden", profile.summary.length < 250);
+    els.pSummary.textContent = profile.summary;
+    els.pSectionAbout.classList.remove("hidden");
+    els.btnSummaryToggle.classList.toggle("hidden", profile.summary.length < 240);
   } else {
-    els.sectionAbout.classList.add("hidden");
+    els.pSectionAbout.classList.add("hidden");
   }
 
   // Work Experience
   if (profile.positions && profile.positions.length) {
-    els.positionsList.innerHTML = profile.positions.map((p) => {
+    els.pPositionsContainer.innerHTML = profile.positions.map((p) => {
       const dates = formatDateRange(p.date_range);
-      const meta = [dates, p.location, p.employment_type].filter(Boolean).join(" · ");
-      const desc = p.description ? `<p class="mt-2 text-xs text-slate-600 whitespace-pre-line leading-relaxed">${escapeHtml(p.description)}</p>` : "";
+      const meta = [dates, p.location, p.employment_type].filter(Boolean).join(" • ");
+      const desc = p.description ? `<p class="mt-2.5 text-xs text-slate-400 whitespace-pre-line leading-relaxed font-sans">${escapeHtml(p.description)}</p>` : "";
       return `
-        <div class="relative">
-          <span class="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-brand-600 ring-4 ring-blue-50"></span>
-          <h4 class="text-sm font-bold text-slate-900">${escapeHtml(p.title || "Role")}</h4>
-          <p class="text-xs font-semibold text-brand-600">${escapeHtml(p.company_name || "")}</p>
-          ${meta ? `<p class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(meta)}</p>` : ""}
+        <div class="relative group">
+          <span class="absolute -left-[35px] top-1.5 h-3.5 w-3.5 rounded-full bg-space-950 border-2 border-neon-cyan shadow-neon-cyan"></span>
+          <div class="space-y-0.5">
+            <h4 class="text-sm font-bold text-white">${escapeHtml(p.title || "Role")}</h4>
+            <p class="text-xs font-semibold text-neon-cyan font-mono">${escapeHtml(p.company_name || "")}</p>
+            ${meta ? `<p class="text-[11px] font-mono text-slate-400">${escapeHtml(meta)}</p>` : ""}
+          </div>
           ${desc}
         </div>
       `;
     }).join("");
   } else {
-    els.positionsList.innerHTML = `<p class="text-xs text-slate-400">No positions listed.</p>`;
+    els.pPositionsContainer.innerHTML = `<p class="text-xs font-mono text-slate-500">No positions listed.</p>`;
   }
 
   // Education
   if (profile.educations && profile.educations.length) {
-    els.educationsList.innerHTML = profile.educations.map((e) => {
+    els.pEducationsContainer.innerHTML = profile.educations.map((e) => {
       const degree = [e.degree_name, e.field_of_study].filter(Boolean).join(", ");
       const dates = formatDateRange(e.date_range);
-      const meta = [dates, e.grade ? `Grade: ${e.grade}` : ""].filter(Boolean).join(" · ");
       return `
-        <div class="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-          <h4 class="text-sm font-bold text-slate-900">${escapeHtml(e.school_name || "Institution")}</h4>
-          ${degree ? `<p class="text-xs font-medium text-slate-700 mt-0.5">${escapeHtml(degree)}</p>` : ""}
-          ${meta ? `<p class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(meta)}</p>` : ""}
+        <div class="border-b border-white/5 pb-3 last:border-0 last:pb-0 space-y-1">
+          <h4 class="text-sm font-bold text-white">${escapeHtml(e.school_name || "Institution")}</h4>
+          ${degree ? `<p class="text-xs text-slate-300 font-mono">${escapeHtml(degree)}</p>` : ""}
+          ${dates ? `<p class="text-[11px] font-mono text-slate-500">${escapeHtml(dates)}</p>` : ""}
         </div>
       `;
     }).join("");
   } else {
-    els.educationsList.innerHTML = `<p class="text-xs text-slate-400">No education entries listed.</p>`;
+    els.pEducationsContainer.innerHTML = `<p class="text-xs font-mono text-slate-500">No education entries listed.</p>`;
   }
 
-  // Skills
+  // Skills Cloud
   if (profile.skills && profile.skills.length) {
-    els.skillsCloud.innerHTML = profile.skills.map((s) => (
-      `<span class="px-2.5 py-1 rounded-lg bg-blue-50/70 border border-blue-100 text-xs font-semibold text-brand-700">${escapeHtml(s.name)}</span>`
+    els.pSkillsCount.textContent = `${profile.skills_total || profile.skills.length} Skills`;
+    els.pSkillsCloud.innerHTML = profile.skills.map((s) => (
+      `<span class="px-2.5 py-1 rounded-lg glass-panel font-mono text-xs text-cyan-300 border border-cyan-500/20 hover:border-cyan-500/50 transition">${escapeHtml(s.name)}</span>`
     )).join("");
   } else {
-    els.skillsCloud.innerHTML = `<p class="text-xs text-slate-400">No skills listed.</p>`;
+    els.pSkillsCount.textContent = "0 Skills";
+    els.pSkillsCloud.innerHTML = `<p class="text-xs font-mono text-slate-500">No skills declared.</p>`;
   }
 
   // Certifications
   if (profile.certifications && profile.certifications.length) {
-    els.certsList.innerHTML = profile.certifications.map((c) => {
+    els.pCertsContainer.innerHTML = profile.certifications.map((c) => {
       const title = c.url
-        ? `<a href="${escapeHtml(c.url)}" target="_blank" class="text-xs font-bold text-brand-600 hover:underline">${escapeHtml(c.name)} ↗</a>`
-        : `<span class="text-xs font-bold text-slate-900">${escapeHtml(c.name)}</span>`;
+        ? `<a href="${escapeHtml(c.url)}" target="_blank" class="text-xs font-bold text-neon-cyan hover:underline">${escapeHtml(c.name)} ↗</a>`
+        : `<span class="text-xs font-bold text-white">${escapeHtml(c.name)}</span>`;
       return `
-        <div class="border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+        <div class="border-b border-white/5 pb-2 last:border-0 last:pb-0 space-y-0.5">
           ${title}
-          ${c.authority ? `<p class="text-[11px] text-slate-500">${escapeHtml(c.authority)}</p>` : ""}
-          ${c.issue_date ? `<p class="text-[10px] text-slate-400">Issued ${escapeHtml(c.issue_date)}</p>` : ""}
+          ${c.authority ? `<p class="text-[11px] text-slate-400">${escapeHtml(c.authority)}</p>` : ""}
+          ${c.issue_date ? `<p class="text-[10px] text-slate-500">Issued ${escapeHtml(c.issue_date)}</p>` : ""}
         </div>
       `;
     }).join("");
-    els.sectionCerts.classList.remove("hidden");
+    els.pSectionCerts.classList.remove("hidden");
   } else {
-    els.sectionCerts.classList.add("hidden");
+    els.pSectionCerts.classList.add("hidden");
   }
 
   // Languages
   if (profile.languages && profile.languages.length) {
-    els.languagesList.innerHTML = profile.languages.map((l) => (
-      `<div class="text-xs bg-slate-50 rounded-lg p-2 flex items-center justify-between"><span class="font-bold text-slate-800">${escapeHtml(l.name)}</span><span class="text-slate-500 text-[11px]">${escapeHtml(l.proficiency || "")}</span></div>`
+    els.pLanguagesContainer.innerHTML = profile.languages.map((l) => (
+      `<div class="glass-panel p-2.5 rounded-xl flex items-center justify-between font-mono"><span class="font-bold text-slate-200">${escapeHtml(l.name)}</span><span class="text-slate-400 text-[11px]">${escapeHtml(l.proficiency || "")}</span></div>`
     )).join("");
-    els.sectionLanguages.classList.remove("hidden");
+    els.pSectionLanguages.classList.remove("hidden");
   } else {
-    els.sectionLanguages.classList.add("hidden");
+    els.pSectionLanguages.classList.add("hidden");
   }
 
   // Media
   if (profile.treasury_media && profile.treasury_media.length) {
-    els.mediaList.innerHTML = profile.treasury_media.map((m) => (
-      `<a href="${escapeHtml(m.url || '#')}" target="_blank" class="block text-xs font-semibold text-brand-600 hover:underline bg-slate-50 p-2 rounded-lg border border-slate-100">${escapeHtml(m.title || m.url || "Featured Media")} ↗</a>`
+    els.pMediaContainer.innerHTML = profile.treasury_media.map((m) => (
+      `<a href="${escapeHtml(m.url || '#')}" target="_blank" class="block glass-panel p-2.5 rounded-xl font-mono text-xs text-neon-cyan hover:border-cyan-500/50 transition">${escapeHtml(m.title || m.url || "Media Item")} ↗</a>`
     )).join("");
-    els.sectionMedia.classList.remove("hidden");
+    els.pSectionMedia.classList.remove("hidden");
   } else {
-    els.sectionMedia.classList.add("hidden");
+    els.pSectionMedia.classList.add("hidden");
   }
 
   // Raw JSON
-  const combinedPayload = { profile, intelligence };
-  els.jsonViewer.textContent = JSON.stringify(combinedPayload, null, 2);
+  els.rawJsonDisplay.textContent = JSON.stringify({ profile, intelligence }, null, 2);
 
-  // Code Snippets
+  // Snippets
   const slug = profile.public_identifier || "username";
-  els.codeCurl.textContent = `curl "${API_BASE}/api/profile?url=${slug}" \\\n  -H "Accept: application/json"`;
-  els.codePython.textContent = `import httpx\n\nresponse = httpx.get("${API_BASE}/api/profile", params={"url": "${slug}"})\nprofile = response.json()\nprint(profile["headline"])`;
-  els.codeJs.textContent = `const res = await fetch("${API_BASE}/api/profile?url=${slug}");\nconst profile = await res.json();\nconsole.log(profile);`;
+  els.snippetCurl.textContent = `curl "${API_BASE}/api/profile?url=${slug}" \\\n  -H "Accept: application/json"`;
+  els.snippetPython.textContent = `import httpx\n\nwith httpx.Client() as client:\n    res = client.get("${API_BASE}/api/profile", params={"url": "${slug}"})\n    profile = res.json()\n    print(profile["first_name"], profile["headline"])`;
+  els.snippetJs.textContent = `const res = await fetch("${API_BASE}/api/profile?url=${slug}");\nconst { first_name, headline } = await res.json();\nconsole.log(first_name, headline);`;
 
-  // Display result
-  els.welcomeFeatures.classList.add("hidden");
-  els.resultContainer.classList.remove("hidden");
+  // Toggle Visibility
+  els.idleShowcase.classList.add("hidden");
+  els.activeProfileView.classList.remove("hidden");
 }
 
-// Show/Hide Error
 function showError(msg) {
-  els.errorAlert.textContent = msg;
-  els.errorAlert.classList.remove("hidden");
+  els.errorToastMsg.textContent = msg;
+  els.errorToast.classList.remove("hidden");
 }
 
 function hideError() {
-  els.errorAlert.classList.add("hidden");
+  els.errorToast.classList.add("hidden");
 }
 
-// Fetch Profile & Intelligence
-async function fetchAll(urlOrSlug) {
+async function executeProfileLookup(urlOrSlug) {
   hideError();
-  els.submitBtn.disabled = true;
-  els.btnText.textContent = "Analyzing...";
-  els.btnSpinner.classList.remove("hidden");
+  els.btnAnalyze.disabled = true;
+  els.analyzeLabel.textContent = "Querying Voyager...";
+  els.analyzeSpinner.classList.remove("hidden");
+  els.analyzeArrow.classList.add("hidden");
 
   try {
     const encoded = encodeURIComponent(urlOrSlug);
-    const headers = getHeaders();
+    const headers = getClientHeaders();
 
     const [profileRes, intelRes] = await Promise.all([
       fetch(`${API_BASE}/api/profile?url=${encoded}`, { headers }),
@@ -399,7 +402,7 @@ async function fetchAll(urlOrSlug) {
     if (!profileRes.ok) {
       let errBody = null;
       try { errBody = await profileRes.json(); } catch {}
-      const msg = errBody?.detail || `API request failed (${profileRes.status})`;
+      const msg = errBody?.detail || `API request failed with status ${profileRes.status}`;
       showError(msg);
       return;
     }
@@ -407,14 +410,15 @@ async function fetchAll(urlOrSlug) {
     const profile = await profileRes.json();
     const intelligence = intelRes.ok ? await intelRes.json() : null;
 
-    renderProfile(profile, intelligence);
-    switchTab("overview");
+    renderProfileData(profile, intelligence);
+    switchView("timeline");
   } catch (err) {
-    showError("Could not connect to the LinkedIn Profile Intelligence API server.");
+    showError("Network exception: unable to connect to the IntelLens Voyager service.");
   } finally {
-    els.submitBtn.disabled = false;
-    els.btnText.textContent = "Extract & Analyze";
-    els.btnSpinner.classList.add("hidden");
+    els.btnAnalyze.disabled = false;
+    els.analyzeLabel.textContent = "Analyze Profile";
+    els.analyzeSpinner.classList.add("hidden");
+    els.analyzeArrow.classList.remove("hidden");
   }
 }
 
@@ -423,36 +427,36 @@ els.form.onsubmit = (e) => {
   e.preventDefault();
   const val = els.input.value.trim();
   if (!val) {
-    showError("Please enter a LinkedIn profile URL or vanity slug.");
+    showError("Please provide a valid LinkedIn URL or vanity slug.");
     return;
   }
-  fetchAll(val);
+  executeProfileLookup(val);
 };
 
 // Summary toggle
-els.summaryToggle.onclick = () => {
-  const collapsed = els.cardSummary.classList.toggle("summary-collapsed");
-  els.summaryToggle.textContent = collapsed ? "Show more" : "Show less";
+els.btnSummaryToggle.onclick = () => {
+  const isCollapsed = els.pSummary.classList.toggle("summary-clamp");
+  els.btnSummaryToggle.textContent = isCollapsed ? "Show more" : "Show less";
 };
 
-// Quick demo buttons
-document.querySelectorAll(".demo-btn").forEach((btn) => {
+// Demo Preset Buttons
+document.querySelectorAll(".btn-demo-preset").forEach((btn) => {
   btn.onclick = () => {
-    const demo = btn.getAttribute("data-demo");
-    els.input.value = demo;
-    fetchAll(demo);
+    const slug = btn.getAttribute("data-demo-slug");
+    els.input.value = slug;
+    executeProfileLookup(slug);
   };
 });
 
 // Copy JSON
-async function copyJson() {
+async function copyPayload() {
   if (!currentProfile) return;
   const payload = JSON.stringify({ profile: currentProfile, intelligence: currentIntelligence }, null, 2);
   await navigator.clipboard.writeText(payload);
-  alert("Profile JSON copied to clipboard!");
+  alert("Profile JSON telemetry copied to clipboard!");
 }
-els.btnCopyJson.onclick = copyJson;
-els.btnCopyJsonTab.onclick = copyJson;
+els.btnCopyJson.onclick = copyPayload;
+els.btnCopyJsonTab.onclick = copyPayload;
 
 // Download JSON
 els.btnDownloadJson.onclick = () => {
@@ -462,12 +466,12 @@ els.btnDownloadJson.onclick = () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${currentProfile.public_identifier || "profile"}_intelligence.json`;
+  a.download = `${currentProfile.public_identifier || "profile"}_intel.json`;
   a.click();
   URL.revokeObjectURL(url);
 };
 
-// Export Markdown
+// Export Markdown CV
 els.btnExportMd.onclick = () => {
   if (!currentProfile) return;
   const p = currentProfile;
@@ -479,24 +483,24 @@ els.btnExportMd.onclick = () => {
 ## Recruiter Briefing
 > ${i?.recruiter_pitch || ""}
 
-## Career Metrics
-- **Seniority:** ${i?.career_metrics.seniority_level || "N/A"}
+## Career Telemetry
+- **Seniority Rank:** ${i?.career_metrics.seniority_level || "N/A"}
 - **Total Experience:** ${i?.career_metrics.total_experience_years || 0} years
 - **Average Tenure:** ${i?.career_metrics.average_tenure_years || 0} years / role
-- **Profile Completeness:** ${i?.completeness_score || 0}%
+- **Completeness Score:** ${i?.completeness_score || 0}%
 
-## Summary
+## About
 ${p.summary || "N/A"}
 
-## Experience
+## Work Experience
 ${p.positions.map((pos) => `### ${pos.title} @ ${pos.company_name}
 ${formatDateRange(pos.date_range)} | ${pos.location || ""}
 ${pos.description || ""}`).join("\n\n")}
 
-## Education
+## Academic Background
 ${p.educations.map((edu) => `- **${edu.school_name}**: ${[edu.degree_name, edu.field_of_study].filter(Boolean).join(", ")} (${formatDateRange(edu.date_range)})`).join("\n")}
 
-## Top Skills
+## Core Skills
 ${p.skills.map((s) => s.name).join(", ")}
 `;
 
@@ -504,46 +508,46 @@ ${p.skills.map((s) => s.name).join(", ")}
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${p.public_identifier || "profile"}_resume.md`;
+  a.download = `${p.public_identifier || "profile"}_cv.md`;
   a.click();
   URL.revokeObjectURL(url);
 };
 
-// Settings Modal Handlers
-els.openSettingsBtn.onclick = () => {
-  els.inputLiAt.value = localStorage.getItem(STORAGE_LI_AT) || "";
-  els.inputJsessionid.value = localStorage.getItem(STORAGE_JSESSIONID) || "";
-  els.settingsModal.classList.remove("hidden");
+// Modal Handlers
+els.btnOpenCredentials.onclick = () => {
+  els.modalLiAt.value = localStorage.getItem(STORAGE_LI_AT) || "";
+  els.modalJsessionid.value = localStorage.getItem(STORAGE_JSESSIONID) || "";
+  els.modalCredentials.classList.remove("hidden");
 };
 
-els.closeSettingsBtn.onclick = () => {
-  els.settingsModal.classList.add("hidden");
+els.btnCloseModal.onclick = () => {
+  els.modalCredentials.classList.add("hidden");
 };
 
-els.btnSaveCreds.onclick = () => {
-  const liAt = els.inputLiAt.value.trim();
-  const jsessionid = els.inputJsessionid.value.trim();
+els.btnSaveTokens.onclick = () => {
+  const liAt = els.modalLiAt.value.trim();
+  const jsessionid = els.modalJsessionid.value.trim();
   if (liAt && jsessionid) {
     localStorage.setItem(STORAGE_LI_AT, liAt);
     localStorage.setItem(STORAGE_JSESSIONID, jsessionid);
-    alert("Custom LinkedIn credentials saved locally in browser!");
+    alert("Tokens saved locally in browser storage!");
   } else {
     localStorage.removeItem(STORAGE_LI_AT);
     localStorage.removeItem(STORAGE_JSESSIONID);
   }
-  els.settingsModal.classList.add("hidden");
-  checkStatus();
+  els.modalCredentials.classList.add("hidden");
+  verifySessionMode();
 };
 
-els.btnClearCreds.onclick = () => {
+els.btnClearTokens.onclick = () => {
   localStorage.removeItem(STORAGE_LI_AT);
   localStorage.removeItem(STORAGE_JSESSIONID);
-  els.inputLiAt.value = "";
-  els.inputJsessionid.value = "";
-  alert("Cleared custom credentials.");
-  els.settingsModal.classList.add("hidden");
-  checkStatus();
+  els.modalLiAt.value = "";
+  els.modalJsessionid.value = "";
+  alert("Cleared custom session tokens.");
+  els.modalCredentials.classList.add("hidden");
+  verifySessionMode();
 };
 
-// Init
-checkStatus();
+// Initial verification
+verifySessionMode();
