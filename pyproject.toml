@@ -3,8 +3,9 @@ name = "linkedin-profile-intelligence-api"
 version = "1.0.0"
 description = "Production-grade LinkedIn Profile Intelligence & Extraction API powered by authenticated Voyager REST endpoints and real-time career analytics."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [
+
     { name = "Rahul", email = "rahul@example.com" }
 ]
 dependencies = [
