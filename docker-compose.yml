@@ -1,0 +1,15 @@
+services:
+  api:
+    build: .
+    container_name: linkedin-profile-intelligence-api
+    ports:
+      - "8000:8000"
+    environment:
+      - LI_AT=${LI_AT:-}
+      - JSESSIONID=${JSESSIONID:-}
+      - USER_AGENT=${USER_AGENT:-Mozilla/5.0}
+      - CACHE_TTL_SECONDS=3600
+      - RATE_LIMIT=60/minute
+      - LOG_LEVEL=INFO
+      - ENABLE_SANDBOX_DEMO=true
+    restart: unless-stopped

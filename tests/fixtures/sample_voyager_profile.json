@@ -1,0 +1,148 @@
+{
+  "data": {
+    "elements": [
+      "urn:li:fsd_profile:ACoAAB12345MOCK"
+    ]
+  },
+  "included": [
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Profile",
+      "entityUrn": "urn:li:fsd_profile:ACoAAB12345MOCK",
+      "firstName": "Rahul",
+      "lastName": "Sharma",
+      "headline": "Lead Systems Architect @ CloudScale | Distributed Storage, Kubernetes & Go",
+      "summary": "Distributed systems architect with 10+ years designing cloud infrastructure and high-throughput data pipelines.",
+      "publicIdentifier": "rahul-sharma-lead",
+      "locationName": "Bengaluru, Karnataka, India",
+      "profilePicture": {
+        "displayImageReference": {
+          "vectorImage": {
+            "rootUrl": "https://media.licdn.com/dms/image/v2/mock/",
+            "artifacts": [
+              {
+                "width": 100,
+                "height": 100,
+                "fileIdentifyingUrlPathSegment": "avatar_100.jpg"
+              },
+              {
+                "width": 400,
+                "height": 400,
+                "fileIdentifyingUrlPathSegment": "avatar_400.jpg"
+              }
+            ]
+          }
+        }
+      },
+      "backgroundPicture": {
+        "displayImageReference": {
+          "vectorImage": {
+            "rootUrl": "https://media.licdn.com/dms/image/v2/mock/",
+            "artifacts": [
+              {
+                "width": 800,
+                "height": 200,
+                "fileIdentifyingUrlPathSegment": "cover_800.jpg"
+              }
+            ]
+          }
+        }
+      },
+      "*profileSkills": "urn:li:fsd_profileSkillConnection:ACoAAB12345MOCK"
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.ProfileSkillConnection",
+      "entityUrn": "urn:li:fsd_profileSkillConnection:ACoAAB12345MOCK",
+      "paging": {
+        "count": 5,
+        "start": 0,
+        "total": 5
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Position",
+      "entityUrn": "urn:li:fsd_position:1001",
+      "title": "Lead Systems Architect",
+      "companyName": "CloudScale Technologies",
+      "locationName": "Bengaluru, India",
+      "description": "Architecting multi-tenant distributed key-value stores handling 2M QPS.",
+      "dateRange": {
+        "start": { "year": 2021, "month": 6 },
+        "end": null
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Position",
+      "entityUrn": "urn:li:fsd_position:1002",
+      "title": "Senior Software Engineer",
+      "companyName": "DataMesh Systems",
+      "locationName": "Hyderabad, India",
+      "description": "Built event-streaming infrastructure using Apache Kafka and Go.",
+      "dateRange": {
+        "start": { "year": 2018, "month": 1 },
+        "end": { "year": 2021, "month": 5 }
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Education",
+      "entityUrn": "urn:li:fsd_education:2001",
+      "schoolName": "Indian Institute of Technology",
+      "degreeName": "Bachelor of Technology",
+      "fieldOfStudy": "Computer Science and Engineering",
+      "dateRange": {
+        "start": { "year": 2014, "month": 8 },
+        "end": { "year": 2018, "month": 5 }
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Skill",
+      "entityUrn": "urn:li:fsd_skill:3001",
+      "name": "Go"
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Skill",
+      "entityUrn": "urn:li:fsd_skill:3002",
+      "name": "Kubernetes"
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Skill",
+      "entityUrn": "urn:li:fsd_skill:3003",
+      "name": "Distributed Systems"
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Skill",
+      "entityUrn": "urn:li:fsd_skill:3004",
+      "name": "Python"
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Skill",
+      "entityUrn": "urn:li:fsd_skill:3005",
+      "name": "PostgreSQL"
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Certification",
+      "entityUrn": "urn:li:fsd_cert:4001",
+      "name": "Certified Kubernetes Administrator",
+      "authority": "Cloud Native Computing Foundation",
+      "timePeriod": {
+        "start": { "year": 2022, "month": 3 }
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.Language",
+      "entityUrn": "urn:li:fsd_lang:5001",
+      "name": "English",
+      "proficiency": {
+        "localizedName": "Full professional proficiency"
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.identity.profile.TreasuryMedia",
+      "entityUrn": "urn:li:fsd_media:6001",
+      "title": "Scaling Distributed Raft Clusters",
+      "data": {
+        "Url": "https://github.com/rahul-1909"
+      },
+      "providerName": "GitHub"
+    }
+  ]
+}
