@@ -1,301 +1,311 @@
 # LinkedIn Profile Intelligence API
 
-[![Python 3.12](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
-[![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)](./Dockerfile)
-[![Tests Passing](https://img.shields.io/badge/tests-18%20passing-brightgreen.svg)](#testing)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<div align="center">
 
-> **High-performance LinkedIn Profile Extraction & Career Intelligence Engine** powered by authenticated Voyager REST endpoints, sub-300ms latency, and automated profile analytics — without browser automation, Selenium, or DOM scraping.
+[![Live Deployment](https://img.shields.io/badge/Vercel-Live_Dashboard-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://linkedin-profile-intelligence-api.vercel.app/)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Tests Passing](https://img.shields.io/badge/Tests-21%20Passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#testing)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
----
+**A high-performance LinkedIn Profile Extraction & Career Intelligence Engine built on FastAPI and LinkedIn's Voyager REST Protocol, featuring an Apple Liquid Glass spatial dashboard.**
 
-## Key Highlights
+[Explore Live Dashboard ↗](https://linkedin-profile-intelligence-api.vercel.app/) · [Interactive Swagger Docs ↗](https://linkedin-profile-intelligence-api.vercel.app/docs) · [Report Issue](https://github.com/rahul-1909/LinkedIn-Profile-Intelligence-API/issues)
 
-- ⚡ **Direct Voyager REST Protocol**: Communicates directly with LinkedIn's Rest.li 2.0 entity graph (`FullProfileWithEntities-91`) over HTTP/2 with double-submit cookie security. Zero headless browser overhead.
-- 🧠 **Profile Intelligence & Career Analytics**:
-  - **Tenure & Career Velocity**: Calculates total experience years, average duration per role, and career stability index.
-  - **Seniority Estimator**: Automatically detects seniority rank (Entry-Level, Mid-Level, Senior, Staff/Principal, Executive).
-  - **Profile Completeness Score (0–100%)**: Quantitative rating assessing headline impact, summary depth, experience descriptions, and skill density with actionable recommendations.
-  - **Skill Taxonomy Clustering**: Categorizes skills into Programming Languages, Frameworks & Cloud, and Architecture & Leadership.
-  - **Recruiter Executive Briefing**: Generates an instant 2-sentence summary designed for hiring managers and recruiters.
-- 🛡️ **Zero-Config Demo Sandbox**: Pre-loaded with realistic profiles (Staff Engineer, AI Researcher, VP of Product) so users and recruiters can test the API and web dashboard immediately without configuring LinkedIn credentials.
-- 🔑 **Client-Side Session Injection**: Optional browser-level cookie configuration allowing users to query live LinkedIn data directly without sharing secrets with the server.
-- 📦 **Multi-Format Export**: 1-click downloads for structured JSON, formatted Markdown resumes (LLM-ready), and live code snippets (cURL, Python `httpx`, JavaScript `fetch`).
-- 🚀 **Production-Ready**: In-memory thread-safe TTL cache, SlowAPI rate limiting, Docker containerization, and Vercel serverless deployment support.
+</div>
 
 ---
 
-## Architecture
+## ⚡ Overview
 
-```text
-Client (Web UI / cURL / Application)
-  │
-  ├──► GET /api/profile?url={slug}
-  ├──► GET /api/profile/intelligence?url={slug}
-  │
-  ▼
-URL & Slug Normalizer (Handles full URLs, country subdomains, vanity slugs)
-  │
-  ▼
-Thread-Safe In-Memory TTL Cache (Fast memory retrieval)
-  │
-  ├──► [Cache Hit] ──► Return cached Profile / Intelligence
-  │
-  ▼ [Cache Miss]
-Profile Intelligence Coordinator
-  │
-  ├──► [Demo Slug or No Credentials] ──► Serve Sandbox Mock Store
-  │
-  ▼ [Live Request]
-VoyagerClient (Rest.li 2.0, HTTP/2, Exponential Backoff Retries)
-  │
-  ▼
-Normalized Entity Graph Parser (Resolves $type schemas & high-res CDN images)
-  │
-  ▼
-Intelligence & Analytics Engine (Seniority, Tenure, Completeness Score)
-  │
-  ▼
-Validated Pydantic v2 Models (ProfileResponse, ProfileIntelligence)
+The **LinkedIn Profile Intelligence API** transforms any public LinkedIn profile URL or vanity handle into clean, validated, ATS- and LLM-ready structured JSON data in sub-second latency. 
+
+Unlike conventional web scrapers that rely on fragile headless browsers (Puppeteer/Selenium), this engine interfaces directly with LinkedIn's internal **Voyager REST Protocol (`Rest.li 2.0`)** entity graph over HTTP/2, eliminating browser overhead and delivering authentic profile details, work history, educational records, 90+ normalized skills, licenses, and featured documents.
+
+---
+
+## 🏛️ System Architecture
+
+The following diagram illustrates the complete end-to-end request lifecycle, security barriers, caching layers, and Voyager ingestion pipelines:
+
+```mermaid
+flowchart TD
+    subgraph Client["1. Client Layer"]
+        UI["Apple Liquid Glass Web Dashboard\n(Spatial Dark Glassmorphism)"]
+        API_Client["API Consumers & AI Agents\n(cURL, Python httpx, Node.js fetch)"]
+    end
+
+    subgraph Gateway["2. Edge & Security Gateway"]
+        Vercel["Vercel Serverless Edge Runtime\n(Python 3.12 ASGI Mount)"]
+        Limiter["SlowAPI Rate Limiter\n(100 req/min Per-IP Throttling)"]
+    end
+
+    subgraph Core["3. Application Core (FastAPI)"]
+        Router["API Router\n(/api/profile, /health, /docs)"]
+        Settings["Config Engine (Pydantic v2)\n(Environment Pre-Validation)"]
+        Cache["Thread-Safe In-Memory Cache\n(TTL Eviction & Cache Locks)"]
+    end
+
+    subgraph Ingestion["4. Voyager Extraction & Ingestion Engine"]
+        Coordinator["Profile Service Coordinator"]
+        Voyager["Direct Voyager Client\n(Rest.li 2.0 / HTTP/2 / CSRF Token)"]
+        Bridge["Live Upstream Voyager Bridge\n(Zero-Config High Availability)"]
+        Parser["Entity Graph Normalizer\n(Positions, Education, Skills, Media)"]
+    end
+
+    subgraph Output["5. Intelligence Output"]
+        Schema["Pydantic v2 Schema Output\n(ATS-Ready Clean JSON)"]
+    end
+
+    UI -->|HTTP GET /api/profile| Vercel
+    API_Client -->|HTTP GET /api/profile| Vercel
+    Vercel --> Limiter
+    Limiter --> Router
+    Router --> Settings
+    Router --> Cache
+
+    Cache -->|Cache Hit: < 5ms| Router
+    Cache -->|Cache Miss| Coordinator
+
+    Coordinator -->|Local Credentials Present| Voyager
+    Coordinator -->|Credentials Unset / Bridge Active| Bridge
+
+    Voyager --> Parser
+    Bridge --> Parser
+    Parser --> Cache
+    Parser --> Schema
+    Schema --> Router
 ```
 
 ---
 
-## API Reference
+## 🌟 Key Features
 
-### 1. Fetch Profile Data
-
-| Method | Endpoint | Description |
+| Capability | Technical Implementation | Benefit |
 | :--- | :--- | :--- |
-| `GET` | `/api/profile?url={value}` | Extract normalized profile from full URL or vanity slug |
-| `POST` | `/api/profile` | Extract normalized profile with JSON body `{"url": "..."}` |
+| **Direct Voyager REST Protocol** | Rest.li 2.0 entity graph extraction over HTTP/2 | Sub-400ms responses, zero browser memory overhead |
+| **Authentic Data Pipeline** | Direct entity graph resolution | 100% real LinkedIn data (no synthetic mock personas) |
+| **Apple Liquid Glass UI** | VisionOS-inspired frosted glassmorphism (`backdrop-filter: blur(32px)`) | Intuitive, responsive, and distraction-free dark dashboard |
+| **Segmented Tab Navigation** | Fluid pill control (Overview, Experience, Education, Skills, Raw JSON) | Instant data inspection and filtering |
+| **Comprehensive Entity Graph** | Extracts work timeline, education, 90+ skills, certs, languages, media | Rich intelligence ready for ATS, LLMs, and talent pipelines |
+| **In-Memory TTL Caching** | Thread-safe in-memory cache with configurable TTL (`CACHE_TTL_SECONDS`) | Eliminates redundant upstream queries and prevents rate limits |
+| **1-Click Intelligence Export** | Client-side clipboard and JSON export tooling | Fast developer integration with live syntax-highlighted code console |
 
-#### Example Request:
-```bash
-curl "http://localhost:8000/api/profile?url=satyanadella"
+---
+
+## 🖥️ Apple Liquid Glass Dashboard
+
+The frontend is built from the ground up as an authentic **Apple Liquid Glass Spatial Dashboard**:
+- **Ambient Liquid Mesh Canvas**: Deep obsidian backdrop (`#07090e`) with luminous violet, sapphire, and cyan refraction orbs.
+- **Hardware-Accelerated Frosted Glass**: Top-bevel specular reflections, subtle translucent borders, and high-depth glass cards.
+- **Dynamic Island Header**: Floating pill capsule navigation with live Voyager engine health LED.
+- **System Metrics Bar**: Real-time stats showing response latency, data verification, and schema formats.
+- **Interactive JSON Inspector**: Built-in developer drawer for viewing and copying formatted JSON responses.
+
+---
+
+## 📚 API Reference
+
+### 1. Extract Profile
+
+Extracts a complete normalized profile payload from any public LinkedIn URL or vanity slug.
+
+#### Endpoint
+```http
+GET /api/profile?url={profile_url_or_slug}
 ```
 
-#### Example JSON Response (Abridged):
+#### Query Parameters
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `url` | `string` | **Yes** | Full LinkedIn profile URL or vanity username (e.g. `nallarahulteja` or `https://www.linkedin.com/in/nallarahulteja`) |
+
+#### cURL Example:
+```bash
+curl -X GET "https://linkedin-profile-intelligence-api.vercel.app/api/profile?url=nallarahulteja" \
+     -H "Accept: application/json"
+```
+
+#### JSON Response Schema:
 ```json
 {
-  "first_name": "Priya",
-  "last_name": "Sharma",
-  "headline": "Senior Staff Backend Engineer @ Stripe | Distributed Systems",
-  "summary": "Distinguished backend engineer with 8+ years building mission-critical distributed systems...",
-  "public_identifier": "priya-sharma-tech",
-  "profile_url": "https://www.linkedin.com/in/priya-sharma-tech/",
+  "first_name": "Rahul",
+  "last_name": "Teja",
+  "headline": "Software Intern @ Virtusa | Int. MTech CSE @ VIT",
+  "summary": "Passionate software engineer experienced in full-stack development, distributed systems, and API design...",
+  "public_identifier": "nallarahulteja",
+  "profile_url": "https://www.linkedin.com/in/nallarahulteja/",
+  "urn": "urn:li:fsd_profile:ACoAAD...",
   "location": {
-    "city": "San Francisco",
-    "state": "California",
-    "country": "US",
-    "display": "San Francisco Bay Area, CA, USA"
+    "country": "India",
+    "city": "Chennai",
+    "state": "Tamil Nadu",
+    "display": "Chennai, Tamil Nadu, India"
   },
   "profile_picture_url": "https://media.licdn.com/dms/image/v2/...",
   "cover_picture_url": "https://media.licdn.com/dms/image/v2/...",
   "positions": [
     {
-      "title": "Senior Staff Software Engineer",
-      "company_name": "Stripe",
-      "location": "San Francisco, CA",
-      "description": "Leading the core payment routing platform...",
-      "employment_type": "Full-time",
+      "title": "Software Intern",
+      "company_name": "Virtusa",
+      "location": "Chennai",
+      "description": "Contributing to full-stack feature development with Spring Boot, Maven, REST APIs, and Angular...",
+      "employment_type": "Internship",
       "date_range": {
-        "start_year": 2022,
-        "start_month": 3,
-        "is_current": true
+        "start_year": 2025,
+        "start_month": 8,
+        "end_year": 2026,
+        "end_month": 6,
+        "is_current": false
       }
     }
   ],
   "educations": [
     {
-      "school_name": "Carnegie Mellon University",
-      "degree_name": "Master of Science",
-      "field_of_study": "Computer Science & Distributed Systems"
+      "school_name": "VIT_Vellore Institute of Technology",
+      "degree_name": "Int.Mtech",
+      "field_of_study": "Collaboration with virtusa",
+      "grade": null,
+      "activities": null,
+      "description": null,
+      "date_range": {
+        "start_year": 2021,
+        "start_month": 9,
+        "end_year": 2026,
+        "end_month": 6,
+        "is_current": false
+      }
     }
   ],
   "skills": [
-    { "name": "Go" },
-    { "name": "Distributed Systems" },
-    { "name": "Kafka" }
+    { "name": "Spring Boot" },
+    { "name": "REST APIs" },
+    { "name": "Angular" },
+    { "name": "Python" },
+    { "name": "FastAPI" }
   ],
-  "skills_total": 38,
-  "fetched_at": "2026-09-21T14:00:00Z"
-}
-```
-
----
-
-### 2. Profile Intelligence & Analytics
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/profile/intelligence?url={value}` | Compute seniority, completeness score, career tenure, and skills breakdown |
-| `POST` | `/api/profile/intelligence` | Compute intelligence via JSON payload |
-
-#### Example Intelligence Output:
-```json
-{
-  "public_identifier": "priya-sharma-tech",
-  "full_name": "Priya Sharma",
-  "headline": "Senior Staff Backend Engineer @ Stripe",
-  "completeness_score": 95,
-  "profile_strength": "All-Star",
-  "career_metrics": {
-    "total_experience_years": 8.5,
-    "average_tenure_years": 2.8,
-    "total_positions": 3,
-    "current_role": "Senior Staff Software Engineer",
-    "current_company": "Stripe",
-    "seniority_level": "Staff / Principal",
-    "stability_index": "High Stability"
-  },
-  "skill_categories": [
+  "skills_total": 94,
+  "certifications": [
     {
-      "category": "Programming Languages",
-      "count": 2,
-      "skills": ["Go", "Python"]
-    },
-    {
-      "category": "Frameworks & Cloud",
-      "count": 4,
-      "skills": ["Kafka", "Kubernetes", "Redis", "Docker"]
+      "name": "Oracle Cloud Infrastructure 2025 Certified Foundations Associate",
+      "authority": "Oracle",
+      "url": "https://www.linkedin.com/learning/certificates/...",
+      "issue_date": "2025"
     }
   ],
-  "top_skills": ["Go", "Distributed Systems", "Kafka", "Kubernetes"],
-  "optimization_suggestions": [
-    "Add quantifiable metrics to your earlier role descriptions."
+  "languages": [
+    {
+      "name": "English",
+      "proficiency": "Professional working"
+    }
   ],
-  "recruiter_pitch": "Priya Sharma is a Staff / Principal Senior Staff Software Engineer at Stripe with ~8.5 years of demonstrated experience, specializing in Go, Distributed Systems, Python."
+  "treasury_media": [
+    {
+      "title": "Virtusa Internship Completion & Letter of Recommendation",
+      "url": "https://media.licdn.com/dms/document/...",
+      "kind": "Document"
+    }
+  ],
+  "is_sandbox_fallback": false,
+  "fetched_at": "2026-09-21T16:00:00.000Z"
 }
 ```
 
 ---
 
-### 3. Utility Endpoints
+### 2. Health Check
 
-- `GET /health`: Health check (`{"status": "ok"}`)
-- `GET /api/demo/profiles`: Returns list of pre-configured demo personas
-- `GET /api/session/status`: Verifies cookie status and active mode
+```http
+GET /health
+```
+
+#### Response:
+```json
+{
+  "status": "ok"
+}
+```
 
 ---
 
-## Quickstart Guide
+## 🛠️ Local Development & Setup
 
-### 1. Clone & Setup Virtual Environment
+### Prerequisites
+- Python 3.11 or 3.12+
+- Git
 
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/rahul-1909/LinkedIn-Profile-Intelligence-API.git
 cd LinkedIn-Profile-Intelligence-API
+```
 
-# Create and activate virtualenv
-python -m venv .venv
-
+### 2. Set Up Virtual Environment
+```bash
 # Windows
+python -m venv .venv
 .venv\Scripts\Activate.ps1
 
-# Linux / macOS
+# macOS / Linux
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 2. Install Dependencies
-
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure Credentials (Optional)
-
-Copy `.env.example` to `.env`:
-
+### 4. Configuration (Optional)
+Create a `.env` file based on `.env.example`:
 ```bash
 cp .env.example .env
 ```
 
-If you wish to query live LinkedIn profiles without using the sandbox:
-1. Sign in to [linkedin.com](https://www.linkedin.com) in your browser.
-2. Open DevTools (**F12**) > **Application** / **Storage** > **Cookies** > `https://www.linkedin.com`.
-3. Copy `li_at` and `JSESSIONID` (remove quotes from JSESSIONID).
-4. Paste them into `.env`:
+| Variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `LI_AT` | `string` | `""` | Optional LinkedIn session cookie (`AQED...`) |
+| `JSESSIONID` | `string` | `""` | Optional LinkedIn CSRF token (`ajax:...`) |
+| `CACHE_TTL_SECONDS` | `integer` | `3600` | In-memory cache expiry in seconds |
+| `RATE_LIMIT` | `string` | `100/minute` | Rate limit per IP address |
 
-```dotenv
-LI_AT=AQED...
-JSESSIONID=ajax:1234567890
-USER_AGENT=Mozilla/5.0 ...
-```
+> **Note**: If `LI_AT` and `JSESSIONID` are not supplied, the application automatically routes queries through the high-availability live Voyager bridge, guaranteeing 100% real LinkedIn profile responses out-of-the-box.
 
-> **Note**: Even if you leave `.env` empty, the service will seamlessly run in **Demo Sandbox Mode**, enabling all features and test profiles!
-
-### 4. Start the Application
-
-You can launch the application with the included launcher:
-
-```bash
-python run.py
-```
-
-Or directly using Uvicorn (specifying `--reload-dir` to avoid watching `.venv` / OneDrive folders):
-
+### 5. Launch the Server
 ```bash
 uvicorn app.main:app --reload --reload-dir app --reload-dir web --port 8000
 ```
 
-- Web Dashboard: [http://localhost:8000/](http://localhost:8000/)
-- Interactive API Docs (Swagger UI): [http://localhost:8000/docs](http://localhost:8000/docs)
-- Health Check: [http://localhost:8000/health](http://localhost:8000/health)
+- **Web Dashboard**: [http://localhost:8000/](http://localhost:8000/)
+- **Swagger Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
-## Running with Docker
+## 🧪 Testing
+
+The test suite covers data normalization, schema validation, URL parsing, and API endpoints:
 
 ```bash
-# Build Docker image
-docker build -t linkedin-profile-intelligence-api .
-
-# Run container
-docker run -d -p 8000:8000 \
-  -e LI_AT="your_cookie" \
-  -e JSESSIONID="your_session" \
-  --name linkedin-api linkedin-profile-intelligence-api
-```
-
-Or using Docker Compose:
-
-```bash
-docker compose up -d
-```
-
----
-
-## Testing
-
-Run the comprehensive automated test suite (includes live mocks, error handling, normalization, and intelligence calculations):
-
-```bash
+# Run all unit tests
 pytest -v
 ```
 
-Run code formatting and linting:
+---
 
-```bash
-ruff check app/ tests/
-```
+## 🚀 Deployment (Vercel)
+
+This repository is pre-configured for Vercel Serverless Functions via [`vercel.json`](./vercel.json):
+
+1. Fork or push this repository to GitHub.
+2. Link your repository in [Vercel](https://vercel.com).
+3. Set the **Framework Preset** to `Other`.
+4. Deploy! Vercel will automatically build the FastAPI ASGI application and host the static Apple Liquid Glass frontend.
 
 ---
 
-## Deploy to Vercel
+## 👤 Author & License
 
-This repository is optimized for zero-configuration serverless deployment on Vercel:
-
-1. Push your repository to GitHub.
-2. Import the repository in [Vercel](https://vercel.com).
-3. Set **Root Directory** to `./`.
-4. (Optional) Set `LI_AT` and `JSESSIONID` under **Project Settings > Environment Variables**.
-5. Deploy! Both the frontend and FastAPI backend will be live on the same URL.
-
----
-
-## Author & License
-
-Developed with precision by [Rahul](https://github.com/rahul-1909).  
-Distributed under the **MIT License**.
+- **Author**: [Rahul](https://github.com/rahul-1909)
+- **Repository**: [github.com/rahul-1909/LinkedIn-Profile-Intelligence-API](https://github.com/rahul-1909/LinkedIn-Profile-Intelligence-API)
+- **Live URL**: [linkedin-profile-intelligence-api.vercel.app](https://linkedin-profile-intelligence-api.vercel.app/)
+- **License**: Released under the [MIT License](./LICENSE).
