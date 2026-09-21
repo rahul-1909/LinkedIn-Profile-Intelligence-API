@@ -1,6 +1,7 @@
 /**
- * LinkedIn Profile Viewer — Apple Liquid Glass UI
- * Built on FastAPI + LinkedIn Voyager REST.
+ * LinkedIn Profile Intelligence — Apple Liquid Glass UI Dashboard
+ * Built with FastAPI + LinkedIn Voyager REST Engine.
+ * Author: Rahul (https://github.com/rahul-1909)
  */
 
 const DEFAULT_API_BASE = window.location.origin;
@@ -40,7 +41,7 @@ function resolveApiBase() {
     try {
       localStorage.setItem(STORAGE_KEY, cleaned);
     } catch {
-      /* ignore quota / private mode */
+      /* ignore */
     }
     return cleaned;
   }
@@ -54,6 +55,7 @@ function resolveApiBase() {
 }
 
 const API_BASE = resolveApiBase();
+let currentProfileData = null;
 
 const els = {
   form: document.getElementById("search-form"),
@@ -73,6 +75,8 @@ const els = {
   headline: document.getElementById("headline"),
   location: document.getElementById("location"),
   profileLink: document.getElementById("profile-link"),
+  btnCopyJson: document.getElementById("btn-copy-json"),
+  copyJsonLabel: document.getElementById("copy-json-label"),
   sectionAbout: document.getElementById("section-about"),
   summary: document.getElementById("summary"),
   summaryToggle: document.getElementById("summary-toggle"),
@@ -89,7 +93,10 @@ const els = {
   languages: document.getElementById("languages"),
   sectionMedia: document.getElementById("section-media"),
   treasury: document.getElementById("treasury"),
+  sectionRawJson: document.getElementById("section-raw-json"),
+  rawJsonViewer: document.getElementById("raw-json-viewer"),
   fetchedAt: document.getElementById("fetched-at"),
+  tabButtons: document.querySelectorAll(".tab-btn"),
 };
 
 try {
@@ -131,7 +138,7 @@ function initials(first, last) {
 
 function setLoading(loading) {
   els.submitBtn.disabled = loading;
-  els.btnLabel.textContent = loading ? "Fetching…" : "Fetch Profile";
+  els.btnLabel.textContent = loading ? "Extracting…" : "Inspect Profile";
   els.btnSpinner.classList.toggle("hidden", !loading);
   els.btnArrow.classList.toggle("hidden", loading);
 }
@@ -243,16 +250,16 @@ function renderPositions(positions) {
       const employment = escapeHtml(p.employment_type || "");
       const meta = [dates, location, employment].filter(Boolean).join(" · ");
       const desc = p.description
-        ? `<p class="mt-3 whitespace-pre-wrap text-xs sm:text-sm leading-relaxed text-slate-600 font-normal pl-3 border-l-2 border-apple-blue/20">${escapeHtml(p.description)}</p>`
+        ? `<p class="mt-3 whitespace-pre-wrap text-xs sm:text-sm leading-relaxed text-slate-300 font-normal pl-3 border-l-2 border-cyan-400/30">${escapeHtml(p.description)}</p>`
         : "";
       return `
-        <article class="apple-glass-card rounded-2xl p-4 sm:p-5 relative transition hover:bg-white/80">
-          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-3">
+        <article class="apple-glass-card rounded-2xl p-4 sm:p-5 relative">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1.5 sm:gap-3">
             <div>
-              <h4 class="font-bold text-apple-dark text-sm sm:text-base">${title}</h4>
-              ${company ? `<p class="text-xs font-medium text-slate-700 mt-0.5">${company}</p>` : ""}
+              <h4 class="font-bold text-white text-sm sm:text-base">${title}</h4>
+              ${company ? `<p class="text-xs font-medium text-cyan-300 mt-0.5">${company}</p>` : ""}
             </div>
-            ${meta ? `<span class="apple-glass-pill px-3 py-1 text-[11px] font-medium text-apple-gray shrink-0 rounded-full self-start">${meta}</span>` : ""}
+            ${meta ? `<span class="apple-glass-pill px-3 py-1 text-[11px] font-medium text-slate-300 shrink-0 rounded-full self-start">${meta}</span>` : ""}
           </div>
           ${desc}
         </article>
@@ -277,19 +284,19 @@ function renderEducations(educations) {
       const grade = e.grade ? `Grade: ${escapeHtml(e.grade)}` : "";
       const meta = [dates, grade].filter(Boolean).join(" · ");
       const activities = e.activities
-        ? `<p class="mt-1 text-xs text-slate-600">${escapeHtml(e.activities)}</p>`
+        ? `<p class="mt-1 text-xs text-slate-400">${escapeHtml(e.activities)}</p>`
         : "";
       const desc = e.description
-        ? `<p class="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">${escapeHtml(e.description)}</p>`
+        ? `<p class="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-300">${escapeHtml(e.description)}</p>`
         : "";
       return `
-        <article class="apple-glass-card rounded-2xl p-4 sm:p-5 relative transition hover:bg-white/80">
-          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-3">
+        <article class="apple-glass-card rounded-2xl p-4 sm:p-5 relative">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1.5 sm:gap-3">
             <div>
-              <h4 class="font-bold text-apple-dark text-sm">${school}</h4>
-              ${degreeBits ? `<p class="text-xs text-slate-700 mt-0.5">${escapeHtml(degreeBits)}</p>` : ""}
+              <h4 class="font-bold text-white text-sm">${school}</h4>
+              ${degreeBits ? `<p class="text-xs text-cyan-300 mt-0.5">${escapeHtml(degreeBits)}</p>` : ""}
             </div>
-            ${meta ? `<span class="apple-glass-pill px-3 py-1 text-[11px] font-medium text-apple-gray shrink-0 rounded-full self-start">${meta}</span>` : ""}
+            ${meta ? `<span class="apple-glass-pill px-3 py-1 text-[11px] font-medium text-slate-300 shrink-0 rounded-full self-start">${meta}</span>` : ""}
           </div>
           ${activities}
           ${desc}
@@ -314,14 +321,14 @@ function renderSkills(skills, skillsTotal) {
   const chips = skills
     .map(
       (s) =>
-        `<span class="apple-glass-pill px-3 py-1.5 text-xs font-medium text-slate-800 rounded-full cursor-default">${escapeHtml(s.name)}</span>`,
+        `<span class="apple-glass-pill px-3 py-1 text-xs font-medium text-slate-200 rounded-full cursor-default">${escapeHtml(s.name)}</span>`,
     )
     .join("");
 
   let more = "";
   if (typeof skillsTotal === "number" && skillsTotal > skills.length) {
     const remaining = skillsTotal - skills.length;
-    more = `<span class="apple-glass-pill px-3 py-1.5 text-xs font-semibold text-apple-blue rounded-full">+${remaining} more</span>`;
+    more = `<span class="apple-glass-pill px-3 py-1 text-xs font-semibold text-cyan-400 rounded-full">+${remaining} more</span>`;
   }
 
   els.skills.innerHTML = chips + more;
@@ -338,16 +345,16 @@ function renderCertifications(certs) {
     .map((c) => {
       const name = escapeHtml(c.name || "Certification");
       const title = c.url
-        ? `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-apple-blue hover:underline">${name} ↗</a>`
-        : `<span class="text-xs font-semibold text-apple-dark">${name}</span>`;
+        ? `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-cyan-400 hover:underline">${name} ↗</a>`
+        : `<span class="text-xs font-semibold text-white">${name}</span>`;
       const authority = c.authority
-        ? `<p class="text-[11px] text-apple-gray mt-0.5">${escapeHtml(c.authority)}</p>`
+        ? `<p class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(c.authority)}</p>`
         : "";
       const issued = c.issue_date
-        ? `<span class="apple-glass-pill px-2.5 py-0.5 text-[10px] font-medium text-slate-500 rounded-full shrink-0">${escapeHtml(c.issue_date)}</span>`
+        ? `<span class="apple-glass-pill px-2.5 py-0.5 text-[10px] font-medium text-slate-400 rounded-full shrink-0">${escapeHtml(c.issue_date)}</span>`
         : "";
       return `
-        <article class="apple-glass-card rounded-2xl p-3.5 transition hover:bg-white/80 flex items-start justify-between gap-2">
+        <article class="apple-glass-card rounded-2xl p-3.5 flex items-start justify-between gap-2">
           <div class="min-w-0">
             ${title}
             ${authority}
@@ -371,10 +378,10 @@ function renderLanguages(languages) {
     .map((l) => {
       const name = escapeHtml(l.name || "Language");
       const proficiency = l.proficiency
-        ? `<span class="text-apple-gray text-[11px]">${escapeHtml(l.proficiency)}</span>`
+        ? `<span class="text-slate-400 text-[11px]">${escapeHtml(l.proficiency)}</span>`
         : "";
       return `
-        <div class="apple-glass-pill px-3.5 py-2 rounded-xl text-xs font-medium text-slate-800 flex items-center justify-between">
+        <div class="apple-glass-pill px-3.5 py-2 rounded-xl text-xs font-medium text-slate-200 flex items-center justify-between">
           <span>${name}</span>
           ${proficiency}
         </div>
@@ -395,15 +402,15 @@ function renderTreasury(items) {
     .map((t) => {
       const title = escapeHtml(t.title || t.url || "Document");
       const link = t.url
-        ? `<a href="${escapeHtml(t.url)}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-apple-blue hover:underline block truncate">${title} ↗</a>`
-        : `<span class="text-xs font-medium text-slate-900 block truncate">${title}</span>`;
+        ? `<a href="${escapeHtml(t.url)}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-cyan-400 hover:underline block truncate">${title} ↗</a>`
+        : `<span class="text-xs font-medium text-slate-200 block truncate">${title}</span>`;
       const kind = t.kind
-        ? `<span class="apple-glass-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 rounded">${escapeHtml(t.kind)}</span>`
+        ? `<span class="apple-glass-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 rounded">${escapeHtml(t.kind)}</span>`
         : "";
       return `
-        <div class="apple-glass-card rounded-2xl p-3.5 flex items-center justify-between gap-3 transition hover:bg-white/80">
+        <div class="apple-glass-card rounded-2xl p-3.5 flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-apple-blue text-xs font-bold">📄</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-cyan-500/20 text-cyan-300 text-xs font-bold">📄</span>
             <div class="min-w-0">
               ${link}
             </div>
@@ -417,7 +424,71 @@ function renderTreasury(items) {
   toggleSection(els.sectionMedia, true);
 }
 
+function renderRawJson(profile) {
+  if (!els.rawJsonViewer) return;
+  els.rawJsonViewer.textContent = JSON.stringify(profile, null, 2);
+}
+
+function setupTabs() {
+  els.tabButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetTab = btn.getAttribute("data-tab");
+
+      // Update active button styling
+      els.tabButtons.forEach((b) => {
+        b.classList.remove("apple-tab-active", "text-white");
+        b.classList.add("text-slate-400");
+      });
+      btn.classList.add("apple-tab-active", "text-white");
+      btn.classList.remove("text-slate-400");
+
+      // Filter sections
+      const sidebar = document.querySelector(".tab-pane-sidebar");
+
+      if (targetTab === "all") {
+        if (currentProfileData) {
+          toggleSection(els.sectionAbout, Boolean(currentProfileData.summary));
+          toggleSection(els.sectionExperience, Boolean(currentProfileData.positions && currentProfileData.positions.length));
+          toggleSection(els.sectionEducation, Boolean(currentProfileData.educations && currentProfileData.educations.length));
+          toggleSection(els.sectionSkills, Boolean(currentProfileData.skills && currentProfileData.skills.length));
+          toggleSection(els.sectionCerts, Boolean(currentProfileData.certifications && currentProfileData.certifications.length));
+          toggleSection(els.sectionLanguages, Boolean(currentProfileData.languages && currentProfileData.languages.length));
+          toggleSection(els.sectionMedia, Boolean(currentProfileData.treasury_media && currentProfileData.treasury_media.length));
+        }
+        toggleSection(els.sectionRawJson, false);
+        if (sidebar) sidebar.classList.remove("hidden");
+      } else if (targetTab === "experience") {
+        toggleSection(els.sectionAbout, false);
+        toggleSection(els.sectionExperience, true);
+        toggleSection(els.sectionEducation, false);
+        toggleSection(els.sectionRawJson, false);
+        if (sidebar) sidebar.classList.add("hidden");
+      } else if (targetTab === "education") {
+        toggleSection(els.sectionAbout, false);
+        toggleSection(els.sectionExperience, false);
+        toggleSection(els.sectionEducation, true);
+        toggleSection(els.sectionRawJson, false);
+        if (sidebar) sidebar.classList.add("hidden");
+      } else if (targetTab === "skills") {
+        toggleSection(els.sectionAbout, false);
+        toggleSection(els.sectionExperience, false);
+        toggleSection(els.sectionEducation, false);
+        toggleSection(els.sectionRawJson, false);
+        if (sidebar) sidebar.classList.remove("hidden");
+      } else if (targetTab === "raw-json") {
+        toggleSection(els.sectionAbout, false);
+        toggleSection(els.sectionExperience, false);
+        toggleSection(els.sectionEducation, false);
+        toggleSection(els.sectionRawJson, true);
+        if (sidebar) sidebar.classList.add("hidden");
+      }
+    });
+  });
+}
+
 function renderProfile(profile) {
+  currentProfileData = profile;
+
   renderHeader(profile);
   renderAbout(profile.summary);
   renderPositions(profile.positions);
@@ -426,10 +497,15 @@ function renderProfile(profile) {
   renderCertifications(profile.certifications);
   renderLanguages(profile.languages);
   renderTreasury(profile.treasury_media);
+  renderRawJson(profile);
+
+  // Reset tab to "all"
+  const defaultTab = document.querySelector('.tab-btn[data-tab="all"]');
+  if (defaultTab) defaultTab.click();
 
   if (profile.fetched_at) {
     const d = new Date(profile.fetched_at);
-    els.fetchedAt.textContent = `Extracted at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Cached via Voyager Engine`;
+    els.fetchedAt.textContent = `Extracted at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Voyager REST Engine`;
   } else {
     els.fetchedAt.textContent = "";
   }
@@ -472,19 +548,39 @@ async function fetchProfile(url) {
   }
 }
 
+// Wire form submit
 els.form.addEventListener("submit", (event) => {
   event.preventDefault();
   const url = els.input.value.trim();
   if (!url) {
-    showError("Please paste a LinkedIn profile URL or vanity handle first.");
+    showError("Please paste a LinkedIn profile URL or vanity username first.");
     return;
   }
   fetchProfile(url);
 });
 
+// Wire sample button
 els.sampleBtn.addEventListener("click", () => {
   els.input.value = "https://www.linkedin.com/in/nallarahulteja";
   hideError();
   els.input.focus();
-  els.input.select();
+  fetchProfile(els.input.value);
 });
+
+// Wire copy JSON button
+if (els.btnCopyJson) {
+  els.btnCopyJson.addEventListener("click", async () => {
+    if (!currentProfileData) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(currentProfileData, null, 2));
+      els.copyJsonLabel.textContent = "Copied ✓";
+      setTimeout(() => {
+        els.copyJsonLabel.textContent = "Copy JSON";
+      }, 2000);
+    } catch {
+      els.copyJsonLabel.textContent = "Failed to copy";
+    }
+  });
+}
+
+setupTabs();
