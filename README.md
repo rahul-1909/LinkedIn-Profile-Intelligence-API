@@ -228,8 +228,16 @@ USER_AGENT=Mozilla/5.0 ...
 
 ### 4. Start the Application
 
+You can launch the application with the included launcher:
+
 ```bash
-uvicorn app.main:app --reload --port 8000
+python run.py
+```
+
+Or directly using Uvicorn (specifying `--reload-dir` to avoid watching `.venv` / OneDrive folders):
+
+```bash
+uvicorn app.main:app --reload --reload-dir app --reload-dir web --port 8000
 ```
 
 - Web Dashboard: [http://localhost:8000/](http://localhost:8000/)
