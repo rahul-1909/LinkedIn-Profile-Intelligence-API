@@ -1,3 +1,4 @@
+import os
 from app.config import Settings
 
 
@@ -19,3 +20,19 @@ def test_settings_overrides():
     assert s.jsessionid == "ajax:99999"
     assert s.cache_ttl_seconds == 1800
     assert s.rate_limit == "20/minute"
+
+
+def test_settings_empty_environment_strings(monkeypatch):
+    monkeypatch.setenv("CACHE_TTL_SECONDS", "")
+    monkeypatch.setenv("ENABLE_SANDBOX_DEMO", "")
+    monkeypatch.setenv("LI_AT", "")
+    monkeypatch.setenv("JSESSIONID", "")
+    monkeypatch.setenv("RATE_LIMIT", "")
+    monkeypatch.setenv("LOG_LEVEL", "")
+
+    s = Settings()
+    assert s.cache_ttl_seconds == 3600
+    assert s.enable_sandbox_demo is True
+    assert s.li_at is None
+    assert s.jsessionid is None
+    assert s.rate_limit == "30/minute"

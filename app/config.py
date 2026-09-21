@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +33,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        env_ignore_empty=True,
     )
 
     # LinkedIn session cookies
@@ -67,6 +68,57 @@ class Settings(BaseSettings):
     )
     skills_page_size: int = 50
     skills_max_pages: int = 5
+
+    @field_validator("cache_ttl_seconds", mode="before")
+    @classmethod
+    def parse_cache_ttl(cls, v):
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return 3600
+        return int(v)
+
+    @field_validator("enable_sandbox_demo", mode="before")
+    @classmethod
+    def parse_enable_sandbox(cls, v):
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return True
+        if isinstance(v, str):
+            return v.strip().lower() in ("true", "1", "yes", "on")
+        return bool(v)
+
+    @field_validator("rate_limit", mode="before")
+    @classmethod
+    def parse_rate_limit(cls, v):
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return "30/minute"
+        return str(v).strip()
+
+    @field_validator("log_level", mode="before")
+    @classmethod
+    def parse_log_level(cls, v):
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return "INFO"
+        return str(v).strip()
+
+    @field_validator("skills_page_size", mode="before")
+    @classmethod
+    def parse_skills_page_size(cls, v):
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return 50
+        return int(v)
+
+    @field_validator("skills_max_pages", mode="before")
+    @classmethod
+    def parse_skills_max_pages(cls, v):
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return 5
+        return int(v)
+
+    @field_validator("li_at", "jsessionid", "user_agent", mode="before")
+    @classmethod
+    def parse_optional_strings(cls, v):
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return None
+        return str(v).strip()
 
     @property
     def has_valid_server_credentials(self) -> bool:
