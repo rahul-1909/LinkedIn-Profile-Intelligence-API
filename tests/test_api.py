@@ -114,34 +114,60 @@ async def test_upstream_401_unauthorized(mock_settings):
 
 
 @pytest.mark.asyncio
-async def test_dummy_credentials_fallback_to_sandbox():
-    """Verify that placeholder credentials on server gracefully fallback to synthesized sandbox profile."""
+@respx.mock
+async def test_dummy_credentials_fallback_to_bridge():
+    """Verify that placeholder credentials gracefully fallback to upstream provider."""
+    respx.get("https://linked-in-profile-api.vercel.app/api/profile").mock(
+        return_value=Response(
+            200,
+            json={
+                "first_name": "Rahul",
+                "last_name": "Teja",
+                "headline": "Software Intern",
+                "public_identifier": "nallarahulteja",
+                "positions": [],
+                "educations": [],
+                "skills": [{"name": "Python"}],
+            },
+        )
+    )
     dummy_settings = Settings(
         LI_AT="your_li_at_cookie_here",
         JSESSIONID="ajax:1234567890123456789",
-        ENABLE_SANDBOX_DEMO=True,
     )
     service = ProfileService(settings=dummy_settings)
     profile = await service.get_profile("https://www.linkedin.com/in/nallarahulteja")
     assert profile.public_identifier == "nallarahulteja"
-    assert profile.first_name == "Rahul Teja"
-    assert profile.last_name == "Nalla"
-    assert profile.is_sandbox_fallback is True
-    assert len(profile.skills) > 0
+    assert profile.first_name == "Rahul"
+    assert profile.last_name == "Teja"
+    assert len(profile.skills) == 1
 
 
 @pytest.mark.asyncio
 @respx.mock
 async def test_upstream_401_server_fallback(mock_settings):
-    """Verify that when server credentials fail with 401 and no client headers are passed, it falls back."""
+    """Verify that when server credentials fail with 401, it falls back to upstream provider."""
     respx.get("https://www.linkedin.com/voyager/api/identity/dash/profiles").mock(
         return_value=Response(401, json={"message": "Unauthorized"})
+    )
+    respx.get("https://linked-in-profile-api.vercel.app/api/profile").mock(
+        return_value=Response(
+            200,
+            json={
+                "first_name": "Satya",
+                "last_name": "Nadella",
+                "public_identifier": "satyanadella",
+                "positions": [],
+                "educations": [],
+                "skills": [],
+            },
+        )
     )
 
     voyager = VoyagerClient(mock_settings)
     service = ProfileService(voyager=voyager, settings=mock_settings)
 
-    profile = await service.get_profile("arbitrary-slug")
-    assert profile.public_identifier == "arbitrary-slug"
-    assert profile.is_sandbox_fallback is True
+    profile = await service.get_profile("satyanadella")
+    assert profile.public_identifier == "satyanadella"
+    assert profile.first_name == "Satya"
     await service.close()

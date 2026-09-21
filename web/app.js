@@ -1,549 +1,478 @@
 /**
- * Profile Intelligence — Apple Liquid Glass UI
- * Author: Rahul (rahul-1909)
+ * LinkedIn Profile Viewer — static UI for the FastAPI backend.
+ *
+ * API base resolution (first match wins):
+ *   1. ?api= query param (also saved to localStorage)
+ *   2. localStorage key "linkedin_profile_api_base"
+ *   3. DEFAULT_API_BASE below
+ *
+ * Local: open index.html?api=http://localhost:8000
  */
 
-const API_BASE = window.location.origin.replace(/\/$/, "");
-const STORAGE_LI_AT = "apple_glass_li_at";
-const STORAGE_JSESSIONID = "apple_glass_jsessionid";
+const DEFAULT_API_BASE = window.location.origin;
+const STORAGE_KEY = "profile_lens_api_base";
 
-let currentProfile = null;
-let currentIntelligence = null;
-
-const MONTH_NAMES = [
-  "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+const MONTHS = [
+  "",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
-// Elements
+const ERROR_MESSAGES = {
+  configuration_error: "The API credentials are not configured in Vercel yet.",
+  invalid_url: "That doesn’t look like a valid LinkedIn profile URL.",
+  unauthorized: "Session cookies expired. Update LI_AT / JSESSIONID on the API server.",
+  forbidden: "LinkedIn denied access for this request.",
+  not_found: "No LinkedIn profile found for that URL.",
+  rate_limit_exceeded: "Rate limit hit. Wait a moment and try again.",
+  upstream_error: "Upstream LinkedIn request failed. Try again shortly.",
+};
+
+function resolveApiBase() {
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get("api");
+  if (fromQuery) {
+    const cleaned = fromQuery.replace(/\/$/, "");
+    try {
+      localStorage.setItem(STORAGE_KEY, cleaned);
+    } catch {
+      /* ignore quota / private mode */
+    }
+    return cleaned;
+  }
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) return stored.replace(/\/$/, "");
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_API_BASE.replace(/\/$/, "");
+}
+
+const API_BASE = resolveApiBase();
+
 const els = {
   form: document.getElementById("search-form"),
   input: document.getElementById("url-input"),
   submitBtn: document.getElementById("submit-btn"),
   btnLabel: document.getElementById("btn-label"),
   btnSpinner: document.getElementById("btn-spinner"),
+  btnArrow: document.getElementById("btn-arrow"),
+  sampleBtn: document.getElementById("sample-btn"),
+  apiHint: document.getElementById("api-hint"),
   errorBanner: document.getElementById("error-banner"),
-  idleCards: document.getElementById("idle-cards"),
-  resultView: document.getElementById("result-view"),
-  modePill: document.getElementById("mode-pill"),
-  modeText: document.getElementById("mode-text"),
-
-  // Identity Header
-  profileAvatar: document.getElementById("profile-avatar"),
-  profileName: document.getElementById("profile-name"),
-  profileSeniority: document.getElementById("profile-seniority"),
-  sandboxBadge: document.getElementById("sandbox-badge"),
-  sandboxBanner: document.getElementById("sandbox-banner"),
-  btnBannerSession: document.getElementById("btn-open-session-from-banner"),
-  profileLocation: document.getElementById("profile-location"),
+  featurePreview: document.getElementById("feature-preview"),
+  result: document.getElementById("result"),
+  cover: document.getElementById("cover"),
+  avatar: document.getElementById("avatar"),
+  fullName: document.getElementById("full-name"),
+  headline: document.getElementById("headline"),
+  location: document.getElementById("location"),
   profileLink: document.getElementById("profile-link"),
-  profileHeadline: document.getElementById("profile-headline"),
-
-
-  // Action buttons
-  btnCopy: document.getElementById("btn-copy"),
-  btnDownload: document.getElementById("btn-download"),
-  btnExportMd: document.getElementById("btn-export-md"),
-  btnCopyTab: document.getElementById("btn-copy-tab"),
-
-  // KPIs
-  metricScore: document.getElementById("metric-score"),
-  metricExperience: document.getElementById("metric-experience"),
-  metricTenure: document.getElementById("metric-tenure"),
-  metricStability: document.getElementById("metric-stability"),
-  recruiterPitch: document.getElementById("recruiter-pitch"),
-
-  // Segmented Tabs
-  tabOverview: document.getElementById("tab-overview"),
-  tabIntel: document.getElementById("tab-intel"),
-  tabJson: document.getElementById("tab-json"),
-  tabCode: document.getElementById("tab-code"),
-  paneOverview: document.getElementById("pane-overview"),
-  paneIntel: document.getElementById("pane-intel"),
-  paneJson: document.getElementById("pane-json"),
-  paneCode: document.getElementById("pane-code"),
-
-  // Overview Pane
   sectionAbout: document.getElementById("section-about"),
-  profileSummary: document.getElementById("profile-summary"),
+  summary: document.getElementById("summary"),
   summaryToggle: document.getElementById("summary-toggle"),
-  positionsContainer: document.getElementById("positions-container"),
-  educationsContainer: document.getElementById("educations-container"),
-  skillsTotal: document.getElementById("skills-total"),
-  skillsCloud: document.getElementById("skills-cloud"),
+  sectionExperience: document.getElementById("section-experience"),
+  positions: document.getElementById("positions"),
+  sectionEducation: document.getElementById("section-education"),
+  educations: document.getElementById("educations"),
+  sectionSkills: document.getElementById("section-skills"),
+  skills: document.getElementById("skills"),
   sectionCerts: document.getElementById("section-certs"),
-  certsContainer: document.getElementById("certs-container"),
+  certifications: document.getElementById("certifications"),
   sectionLanguages: document.getElementById("section-languages"),
-  languagesContainer: document.getElementById("languages-container"),
-
-  // Intelligence Pane
-  tipsContainer: document.getElementById("tips-container"),
-  clustersContainer: document.getElementById("clusters-container"),
-
-  // JSON & Code
-  jsonBox: document.getElementById("json-box"),
-  codeCurl: document.getElementById("code-curl"),
-  codePython: document.getElementById("code-python"),
-  codeJs: document.getElementById("code-js"),
-
-  // Session Modal
-  modalSession: document.getElementById("modal-session"),
-  btnSession: document.getElementById("btn-session"),
-  btnCloseModal: document.getElementById("btn-close-modal"),
-  inputLiAt: document.getElementById("input-li-at"),
-  inputJsessionid: document.getElementById("input-jsessionid"),
-  btnSaveSession: document.getElementById("btn-save-session"),
-  btnClearSession: document.getElementById("btn-clear-session"),
+  languages: document.getElementById("languages"),
+  sectionMedia: document.getElementById("section-media"),
+  treasury: document.getElementById("treasury"),
+  fetchedAt: document.getElementById("fetched-at"),
 };
 
-function escapeHtml(str) {
-  if (!str) return "";
-  return String(str)
+try {
+  els.apiHint.textContent = `API: ${new URL(API_BASE).host}`;
+} catch {
+  els.apiHint.textContent = `API: ${API_BASE}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/'/g, "&#39;");
+}
+
+function formatMonthYear(month, year) {
+  if (!year) return null;
+  if (month && month >= 1 && month <= 12) return `${MONTHS[month]} ${year}`;
+  return String(year);
 }
 
 function formatDateRange(range) {
   if (!range) return "";
-  const start = [MONTH_NAMES[range.start_month], range.start_year].filter(Boolean).join(" ");
+  const start = formatMonthYear(range.start_month, range.start_year);
   if (!start) return "";
   if (range.is_current) return `${start} – Present`;
-  const end = [MONTH_NAMES[range.end_month], range.end_year].filter(Boolean).join(" ");
+  const end = formatMonthYear(range.end_month, range.end_year);
   return end ? `${start} – ${end}` : start;
 }
 
-function getInitials(first, last) {
+function initials(first, last) {
   const a = (first || "").trim().charAt(0);
   const b = (last || "").trim().charAt(0);
-  return (a + b).toUpperCase() || "LI";
+  const out = `${a}${b}`.toUpperCase();
+  return out || "?";
 }
 
-function getHeaders() {
-  const headers = { Accept: "application/json" };
-  const customLiAt = localStorage.getItem(STORAGE_LI_AT);
-  const customJsessionid = localStorage.getItem(STORAGE_JSESSIONID);
-  if (customLiAt) headers["X-LinkedIn-Li-At"] = customLiAt;
-  if (customJsessionid) headers["X-LinkedIn-JSessionID"] = customJsessionid;
-  return headers;
+function setLoading(loading) {
+  els.submitBtn.disabled = loading;
+  els.btnLabel.textContent = loading ? "Fetching…" : "Fetch profile";
+  els.btnSpinner.classList.toggle("hidden", !loading);
+  els.btnArrow.classList.toggle("hidden", loading);
+  els.input.setAttribute("aria-busy", String(loading));
 }
 
-async function checkServerStatus() {
-  try {
-    const res = await fetch(`${API_BASE}/api/session/status`);
-    if (res.ok) {
-      const data = await res.json();
-      const customLiAt = localStorage.getItem(STORAGE_LI_AT);
-      if (customLiAt) {
-        els.modeText.textContent = "Custom Session";
-        els.modePill.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-700 font-medium";
-      } else if (data.configured) {
-        els.modeText.textContent = "Live Voyager";
-        els.modePill.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 font-medium";
-      } else {
-        els.modeText.textContent = "Sandbox Active";
-        els.modePill.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-700 font-medium";
-      }
-    }
-  } catch (err) {
-    console.warn("Status check failed:", err);
+function showError(message) {
+  els.errorBanner.textContent = message;
+  els.errorBanner.classList.remove("hidden");
+  els.input.setAttribute("aria-invalid", "true");
+}
+
+function hideError() {
+  els.errorBanner.classList.add("hidden");
+  els.errorBanner.textContent = "";
+  els.input.removeAttribute("aria-invalid");
+}
+
+function friendlyError(status, body) {
+  if (body && body.error && ERROR_MESSAGES[body.error]) {
+    return ERROR_MESSAGES[body.error];
   }
+  if (body && body.detail) return body.detail;
+  if (status === 400) return ERROR_MESSAGES.invalid_url;
+  if (status === 401 || status === 403) return ERROR_MESSAGES.unauthorized;
+  if (status === 404) return ERROR_MESSAGES.not_found;
+  if (status === 429) return ERROR_MESSAGES.rate_limit_exceeded;
+  if (status >= 500) return ERROR_MESSAGES.upstream_error;
+  return `Request failed (${status}).`;
 }
 
-// Apple Segmented Switcher
-function switchTab(target) {
-  const tabs = [
-    { key: "overview", btn: els.tabOverview, pane: els.paneOverview },
-    { key: "intel", btn: els.tabIntel, pane: els.paneIntel },
-    { key: "json", btn: els.tabJson, pane: els.paneJson },
-    { key: "code", btn: els.tabCode, pane: els.paneCode },
-  ];
-
-  tabs.forEach((t) => {
-    if (t.key === target) {
-      t.btn.classList.add("active");
-      t.pane.classList.remove("hidden");
-    } else {
-      t.btn.classList.remove("active");
-      t.pane.classList.add("hidden");
-    }
-  });
+function toggleSection(el, show) {
+  el.classList.toggle("hidden", !show);
 }
 
-els.tabOverview.onclick = () => switchTab("overview");
-els.tabIntel.onclick = () => switchTab("intel");
-els.tabJson.onclick = () => switchTab("json");
-els.tabCode.onclick = () => switchTab("code");
+function renderHeader(profile) {
+  const name = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Unknown";
+  els.fullName.textContent = name;
+  els.headline.textContent = profile.headline || "";
 
-// Render
-function renderProfile(profile, intelligence) {
-  currentProfile = profile;
-  currentIntelligence = intelligence;
-
-  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Candidate";
-  els.profileName.textContent = fullName;
-  els.profileHeadline.textContent = profile.headline || "LinkedIn Member";
-
-  // Sandbox indicator
-  if (profile.is_sandbox_fallback) {
-    els.sandboxBadge?.classList.remove("hidden");
-    els.sandboxBanner?.classList.remove("hidden");
+  if (profile.cover_picture_url) {
+    els.cover.style.backgroundImage = `url("${profile.cover_picture_url}")`;
   } else {
-    els.sandboxBadge?.classList.add("hidden");
-    els.sandboxBanner?.classList.add("hidden");
+    els.cover.style.backgroundImage = "";
   }
 
-
-  // Avatar
-  els.profileAvatar.innerHTML = "";
+  els.avatar.innerHTML = "";
   if (profile.profile_picture_url) {
     const img = document.createElement("img");
     img.src = profile.profile_picture_url;
-    img.alt = fullName;
+    img.alt = name;
     img.className = "h-full w-full object-cover";
     img.onerror = () => {
-      els.profileAvatar.textContent = getInitials(profile.first_name, profile.last_name);
+      els.avatar.textContent = initials(profile.first_name, profile.last_name);
     };
-    els.profileAvatar.appendChild(img);
+    els.avatar.appendChild(img);
   } else {
-    els.profileAvatar.textContent = getInitials(profile.first_name, profile.last_name);
+    els.avatar.textContent = initials(profile.first_name, profile.last_name);
   }
 
-  // Location
-  if (profile.location?.display) {
-    els.profileLocation.innerHTML = `<span>📍</span> ${escapeHtml(profile.location.display)}`;
-    els.profileLocation.classList.remove("hidden");
+  const loc = profile.location && profile.location.display;
+  if (loc) {
+    els.location.textContent = loc;
+    els.location.classList.remove("hidden");
   } else {
-    els.profileLocation.classList.add("hidden");
+    els.location.classList.add("hidden");
   }
 
-  // LinkedIn link
   if (profile.profile_url) {
     els.profileLink.href = profile.profile_url;
     els.profileLink.classList.remove("hidden");
   } else {
     els.profileLink.classList.add("hidden");
   }
+}
 
-  // Intelligence KPIs
-  if (intelligence) {
-    const m = intelligence.career_metrics;
-    els.profileSeniority.textContent = m.seniority_level;
-    els.metricScore.textContent = `${intelligence.completeness_score}%`;
-    els.metricExperience.textContent = `${m.total_experience_years} yrs`;
-    els.metricTenure.textContent = `${m.average_tenure_years} yrs`;
-    els.metricStability.textContent = m.stability_index;
-    els.recruiterPitch.textContent = intelligence.recruiter_pitch;
-
-    // Tips
-    els.tipsContainer.innerHTML = intelligence.optimization_suggestions.map(
-      (tip) => `
-        <div class="liquid-glass-subtle p-3 rounded-2xl text-xs text-slate-700 flex items-start gap-2.5">
-          <span class="text-apple-blue font-bold">✓</span>
-          <span>${escapeHtml(tip)}</span>
-        </div>
-      `
-    ).join("") || `<p class="text-xs text-emerald-600 font-medium">All core profile fields are complete.</p>`;
-
-    // Skill Clusters
-    els.clustersContainer.innerHTML = intelligence.skill_categories.map(
-      (cat) => `
-        <div class="liquid-glass-subtle p-4 rounded-2xl space-y-2">
-          <div class="flex items-center justify-between text-xs font-semibold text-apple-dark">
-            <span>${escapeHtml(cat.category)}</span>
-            <span class="text-[11px] px-2 py-0.5 rounded-full bg-black/5 text-slate-600">${cat.count}</span>
-          </div>
-          <div class="flex flex-wrap gap-1.5 pt-1">
-            ${cat.skills.map((s) => `<span class="px-2.5 py-1 rounded-full bg-white text-[11px] font-medium text-slate-700 border border-black/5 shadow-sm">${escapeHtml(s)}</span>`).join("")}
-          </div>
-        </div>
-      `
-    ).join("") || `<p class="text-xs text-apple-gray">No skill groupings available.</p>`;
+function renderAbout(summary) {
+  if (!summary || !summary.trim()) {
+    toggleSection(els.sectionAbout, false);
+    return;
   }
 
-  // Summary / About
-  if (profile.summary && profile.summary.trim()) {
-    els.profileSummary.textContent = profile.summary;
-    els.sectionAbout.classList.remove("hidden");
-    els.summaryToggle.classList.toggle("hidden", profile.summary.length < 240);
-  } else {
-    els.sectionAbout.classList.add("hidden");
+  els.summary.textContent = summary;
+  els.summary.classList.add("summary-collapsed");
+  toggleSection(els.sectionAbout, true);
+
+  // Defer clamp check until layout
+  requestAnimationFrame(() => {
+    const needsToggle = els.summary.scrollHeight > els.summary.clientHeight + 4;
+    els.summaryToggle.classList.toggle("hidden", !needsToggle);
+    els.summaryToggle.textContent = "Show more";
+    els.summaryToggle.onclick = () => {
+      const collapsed = els.summary.classList.toggle("summary-collapsed");
+      els.summaryToggle.textContent = collapsed ? "Show more" : "Show less";
+    };
+  });
+}
+
+function renderPositions(positions) {
+  if (!positions || !positions.length) {
+    toggleSection(els.sectionExperience, false);
+    return;
   }
 
-  // Experience
-  if (profile.positions && profile.positions.length) {
-    els.positionsContainer.innerHTML = profile.positions.map((p) => {
-      const dates = formatDateRange(p.date_range);
-      const meta = [dates, p.location, p.employment_type].filter(Boolean).join(" · ");
-      const desc = p.description ? `<p class="mt-2 text-xs text-slate-600 whitespace-pre-line leading-relaxed">${escapeHtml(p.description)}</p>` : "";
+  els.positions.innerHTML = positions
+    .map((p) => {
+      const title = escapeHtml(p.title || "Role");
+      const company = escapeHtml(p.company_name || "");
+      const dates = escapeHtml(formatDateRange(p.date_range));
+      const location = escapeHtml(p.location || "");
+      const employment = escapeHtml(p.employment_type || "");
+      const meta = [dates, location, employment].filter(Boolean).join(" · ");
+      const desc = p.description
+        ? `<p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">${escapeHtml(p.description)}</p>`
+        : "";
       return `
-        <div class="border-b border-black/5 pb-4 last:border-0 last:pb-0 space-y-0.5">
-          <h4 class="text-sm font-semibold text-apple-dark">${escapeHtml(p.title || "Role")}</h4>
-          <p class="text-xs font-medium text-apple-blue">${escapeHtml(p.company_name || "")}</p>
-          ${meta ? `<p class="text-[11px] text-apple-gray">${escapeHtml(meta)}</p>` : ""}
+        <article class="relative border-b border-slate-100 pb-6 pl-6 last:border-0 last:pb-0">
+          <span class="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full bg-brand-500 ring-4 ring-brand-50" aria-hidden="true"></span>
+          <h4 class="font-bold text-slate-900">${title}</h4>
+          ${company ? `<p class="mt-0.5 text-sm font-medium text-slate-700">${company}</p>` : ""}
+          ${meta ? `<p class="mt-1 text-xs font-medium text-slate-400">${meta}</p>` : ""}
           ${desc}
-        </div>
+        </article>
       `;
-    }).join("");
-  } else {
-    els.positionsContainer.innerHTML = `<p class="text-xs text-apple-gray">No positions listed.</p>`;
+    })
+    .join("");
+
+  toggleSection(els.sectionExperience, true);
+}
+
+function renderEducations(educations) {
+  if (!educations || !educations.length) {
+    toggleSection(els.sectionEducation, false);
+    return;
   }
 
-  // Education
-  if (profile.educations && profile.educations.length) {
-    els.educationsContainer.innerHTML = profile.educations.map((e) => {
-      const degree = [e.degree_name, e.field_of_study].filter(Boolean).join(", ");
-      const dates = formatDateRange(e.date_range);
+  els.educations.innerHTML = educations
+    .map((e) => {
+      const school = escapeHtml(e.school_name || "School");
+      const degreeBits = [e.degree_name, e.field_of_study].filter(Boolean).join(", ");
+      const dates = escapeHtml(formatDateRange(e.date_range));
+      const grade = e.grade ? `Grade: ${escapeHtml(e.grade)}` : "";
+      const meta = [dates, grade].filter(Boolean).join(" · ");
+      const activities = e.activities
+        ? `<p class="mt-1 text-sm text-slate-600">${escapeHtml(e.activities)}</p>`
+        : "";
+      const desc = e.description
+        ? `<p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">${escapeHtml(e.description)}</p>`
+        : "";
       return `
-        <div class="border-b border-black/5 pb-2.5 last:border-0 last:pb-0 space-y-0.5">
-          <h4 class="text-xs font-semibold text-apple-dark">${escapeHtml(e.school_name || "School")}</h4>
-          ${degree ? `<p class="text-[11px] text-slate-700">${escapeHtml(degree)}</p>` : ""}
-          ${dates ? `<p class="text-[10px] text-apple-gray">${escapeHtml(dates)}</p>` : ""}
-        </div>
+        <article class="relative border-b border-slate-100 pb-6 pl-6 last:border-0 last:pb-0">
+          <span class="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full bg-indigo-500 ring-4 ring-indigo-50" aria-hidden="true"></span>
+          <h4 class="font-bold text-slate-900">${school}</h4>
+          ${degreeBits ? `<p class="mt-0.5 text-sm text-slate-700">${escapeHtml(degreeBits)}</p>` : ""}
+          ${meta ? `<p class="mt-1 text-xs font-medium text-slate-400">${meta}</p>` : ""}
+          ${activities}
+          ${desc}
+        </article>
       `;
-    }).join("");
-  } else {
-    els.educationsContainer.innerHTML = `<p class="text-xs text-apple-gray">No education listed.</p>`;
+    })
+    .join("");
+
+  toggleSection(els.sectionEducation, true);
+}
+
+function renderSkills(skills, skillsTotal) {
+  if (!skills || !skills.length) {
+    toggleSection(els.sectionSkills, false);
+    return;
   }
 
-  // Skills Cloud
-  if (profile.skills && profile.skills.length) {
-    els.skillsTotal.textContent = `${profile.skills_total || profile.skills.length} total`;
-    els.skillsCloud.innerHTML = profile.skills.map((s) => (
-      `<span class="px-2.5 py-1 rounded-full bg-white/90 text-xs font-medium text-slate-700 border border-black/5 shadow-sm">${escapeHtml(s.name)}</span>`
-    )).join("");
-  } else {
-    els.skillsTotal.textContent = "";
-    els.skillsCloud.innerHTML = `<p class="text-xs text-apple-gray">No skills listed.</p>`;
+  const chips = skills
+    .map(
+      (s) =>
+        `<span class="rounded-lg border border-brand-100 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700">${escapeHtml(s.name)}</span>`,
+    )
+    .join("");
+
+  let more = "";
+  if (typeof skillsTotal === "number" && skillsTotal > skills.length) {
+    const remaining = skillsTotal - skills.length;
+    more = `<span class="rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600">+${remaining} more</span>`;
   }
 
-  // Certifications
-  if (profile.certifications && profile.certifications.length) {
-    els.certsContainer.innerHTML = profile.certifications.map((c) => {
+  els.skills.innerHTML = chips + more;
+  toggleSection(els.sectionSkills, true);
+}
+
+function renderCertifications(certs) {
+  if (!certs || !certs.length) {
+    toggleSection(els.sectionCerts, false);
+    return;
+  }
+
+  els.certifications.innerHTML = certs
+    .map((c) => {
+      const name = escapeHtml(c.name || "Certification");
       const title = c.url
-        ? `<a href="${escapeHtml(c.url)}" target="_blank" class="font-medium text-apple-blue hover:underline">${escapeHtml(c.name)} ↗</a>`
-        : `<span class="font-medium text-slate-800">${escapeHtml(c.name)}</span>`;
+        ? `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-brand-600 hover:underline">${name} ↗</a>`
+        : `<span class="text-sm font-bold text-slate-900">${name}</span>`;
+      const authority = c.authority
+        ? `<p class="text-sm text-slate-700">${escapeHtml(c.authority)}</p>`
+        : "";
+      const issued = c.issue_date
+        ? `<p class="mt-0.5 text-xs text-slate-500">Issued ${escapeHtml(c.issue_date)}</p>`
+        : "";
       return `
-        <div class="border-b border-black/5 pb-2 last:border-0 last:pb-0">
+        <article class="border-b border-slate-100 pb-4 last:border-0 last:pb-0">
           ${title}
-          ${c.authority ? `<p class="text-[11px] text-apple-gray">${escapeHtml(c.authority)}</p>` : ""}
+          ${authority}
+          ${issued}
+        </article>
+      `;
+    })
+    .join("");
+
+  toggleSection(els.sectionCerts, true);
+}
+
+function renderLanguages(languages) {
+  if (!languages || !languages.length) {
+    toggleSection(els.sectionLanguages, false);
+    return;
+  }
+
+  els.languages.innerHTML = languages
+    .map((l) => {
+      const name = escapeHtml(l.name || "Language");
+      const proficiency = l.proficiency
+        ? `<span class="text-slate-500"> — ${escapeHtml(l.proficiency)}</span>`
+        : "";
+      return `<p class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800">${name}${proficiency}</p>`;
+    })
+    .join("");
+
+  toggleSection(els.sectionLanguages, true);
+}
+
+function renderTreasury(items) {
+  if (!items || !items.length) {
+    toggleSection(els.sectionMedia, false);
+    return;
+  }
+
+  els.treasury.innerHTML = items
+    .map((t) => {
+      const title = escapeHtml(t.title || t.url || "Media");
+      const link = t.url
+        ? `<a href="${escapeHtml(t.url)}" target="_blank" rel="noopener noreferrer" class="font-semibold text-brand-600 hover:underline">${title} ↗</a>`
+        : `<span class="font-medium text-slate-900">${title}</span>`;
+      const kind = t.kind
+        ? `<span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium uppercase tracking-wide text-slate-600">${escapeHtml(t.kind)}</span>`
+        : "";
+      const provider = t.provider
+        ? `<span class="text-xs text-slate-500">${escapeHtml(t.provider)}</span>`
+        : "";
+      return `
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+          ${link}
+          ${kind}
+          ${provider}
         </div>
       `;
-    }).join("");
-    els.sectionCerts.classList.remove("hidden");
+    })
+    .join("");
+
+  toggleSection(els.sectionMedia, true);
+}
+
+function renderProfile(profile) {
+  renderHeader(profile);
+  renderAbout(profile.summary);
+  renderPositions(profile.positions);
+  renderEducations(profile.educations);
+  renderSkills(profile.skills, profile.skills_total);
+  renderCertifications(profile.certifications);
+  renderLanguages(profile.languages);
+  renderTreasury(profile.treasury_media);
+
+  if (profile.fetched_at) {
+    const d = new Date(profile.fetched_at);
+    els.fetchedAt.textContent = `Fetched ${d.toLocaleString()}`;
   } else {
-    els.sectionCerts.classList.add("hidden");
+    els.fetchedAt.textContent = "";
   }
 
-  // Languages
-  if (profile.languages && profile.languages.length) {
-    els.languagesContainer.innerHTML = profile.languages.map((l) => (
-      `<div class="flex items-center justify-between text-xs py-1 border-b border-black/5 last:border-0"><span class="font-medium text-slate-800">${escapeHtml(l.name)}</span><span class="text-apple-gray text-[11px]">${escapeHtml(l.proficiency || "")}</span></div>`
-    )).join("");
-    els.sectionLanguages.classList.remove("hidden");
-  } else {
-    els.sectionLanguages.classList.add("hidden");
-  }
-
-  // Raw JSON
-  els.jsonBox.textContent = JSON.stringify({ profile, intelligence }, null, 2);
-
-  // Snippets
-  const slug = profile.public_identifier || "username";
-  els.codeCurl.textContent = `curl "${API_BASE}/api/profile?url=${slug}"`;
-  els.codePython.textContent = `import httpx\n\nres = httpx.get("${API_BASE}/api/profile", params={"url": "${slug}"})\nprofile = res.json()\nprint(profile["headline"])`;
-  els.codeJs.textContent = `const res = await fetch("${API_BASE}/api/profile?url=${slug}");\nconst data = await res.json();\nconsole.log(data);`;
-
-  // Toggle Visibility
-  els.idleCards.classList.add("hidden");
-  els.resultView.classList.remove("hidden");
+  els.result.classList.remove("hidden");
+  els.featurePreview.classList.add("hidden");
+  requestAnimationFrame(() => {
+    els.result.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 }
 
-function showError(msg) {
-  els.errorBanner.textContent = msg;
-  els.errorBanner.classList.remove("hidden");
-}
-
-function hideError() {
-  els.errorBanner.classList.add("hidden");
-}
-
-async function fetchProfile(urlOrSlug) {
+async function fetchProfile(url) {
   hideError();
-  els.submitBtn.disabled = true;
-  els.btnLabel.textContent = "Analyzing…";
-  els.btnSpinner.classList.remove("hidden");
+  els.result.classList.add("hidden");
+  els.featurePreview.classList.remove("hidden");
+  setLoading(true);
 
   try {
-    const encoded = encodeURIComponent(urlOrSlug);
-    const headers = getHeaders();
+    const endpoint = `${API_BASE}/api/profile?url=${encodeURIComponent(url)}`;
+    const res = await fetch(endpoint);
+    let body = null;
+    try {
+      body = await res.json();
+    } catch {
+      body = null;
+    }
 
-    const [profileRes, intelRes] = await Promise.all([
-      fetch(`${API_BASE}/api/profile?url=${encoded}`, { headers }),
-      fetch(`${API_BASE}/api/profile/intelligence?url=${encoded}`, { headers }),
-    ]);
-
-    if (!profileRes.ok) {
-      let err = null;
-      try { err = await profileRes.json(); } catch {}
-      if (profileRes.status === 401) {
-        showError("LinkedIn session expired or unauthorized. Please verify your session cookies in Settings.");
-      } else if (profileRes.status === 403) {
-        showError("LinkedIn access denied. Checkpoint or security challenge active.");
-      } else if (profileRes.status === 404) {
-        showError("LinkedIn profile not found. Please check the profile URL or vanity username.");
-      } else {
-        showError(err?.detail || `Request failed (${profileRes.status}). Please try again.`);
-      }
+    if (!res.ok) {
+      showError(friendlyError(res.status, body));
       return;
     }
 
-
-    const profile = await profileRes.json();
-    const intelligence = intelRes.ok ? await intelRes.json() : null;
-
-    renderProfile(profile, intelligence);
-    switchTab("overview");
-  } catch (err) {
-    showError("Could not connect to the Profile Intelligence service.");
+    renderProfile(body);
+  } catch {
+    showError(
+      `Could not reach the API at ${API_BASE}. Is the server running? Pass ?api=http://localhost:8000 to override.`,
+    );
   } finally {
-    els.submitBtn.disabled = false;
-    els.btnLabel.textContent = "Analyze";
-    els.btnSpinner.classList.add("hidden");
+    setLoading(false);
   }
 }
 
-// Event Listeners
-els.form.onsubmit = (e) => {
-  e.preventDefault();
-  const val = els.input.value.trim();
-  if (!val) {
-    showError("Please enter a LinkedIn profile URL or vanity slug.");
+els.form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const url = els.input.value.trim();
+  if (!url) {
+    showError("Paste a LinkedIn profile URL or vanity slug first.");
     return;
   }
-  fetchProfile(val);
-};
-
-// Summary toggle
-els.summaryToggle.onclick = () => {
-  const isCollapsed = els.profileSummary.classList.toggle("summary-clamp");
-  els.summaryToggle.textContent = isCollapsed ? "Show more" : "Show less";
-};
-
-// Demo Chips
-document.querySelectorAll(".demo-chip").forEach((btn) => {
-  btn.onclick = () => {
-    const slug = btn.getAttribute("data-demo");
-    els.input.value = slug;
-    fetchProfile(slug);
-  };
+  fetchProfile(url);
 });
 
-// Copy JSON
-async function copyJson() {
-  if (!currentProfile) return;
-  const payload = JSON.stringify({ profile: currentProfile, intelligence: currentIntelligence }, null, 2);
-  await navigator.clipboard.writeText(payload);
-  alert("Profile JSON copied to clipboard!");
-}
-els.btnCopy.onclick = copyJson;
-els.btnCopyTab.onclick = copyJson;
-
-// Download JSON
-els.btnDownload.onclick = () => {
-  if (!currentProfile) return;
-  const payload = JSON.stringify({ profile: currentProfile, intelligence: currentIntelligence }, null, 2);
-  const blob = new Blob([payload], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${currentProfile.public_identifier || "profile"}_data.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-// Export Markdown CV
-els.btnExportMd.onclick = () => {
-  if (!currentProfile) return;
-  const p = currentProfile;
-  const i = currentIntelligence;
-  const md = `# ${p.first_name} ${p.last_name}
-**${p.headline || ""}**
-*Location:* ${p.location?.display || "N/A"} | *LinkedIn:* ${p.profile_url || ""}
-
-## Recruiter Briefing
-> ${i?.recruiter_pitch || ""}
-
-## Career Metrics
-- **Seniority:** ${i?.career_metrics.seniority_level || "N/A"}
-- **Total Experience:** ${i?.career_metrics.total_experience_years || 0} years
-- **Average Tenure:** ${i?.career_metrics.average_tenure_years || 0} years / role
-- **Completeness Score:** ${i?.completeness_score || 0}%
-
-## About
-${p.summary || "N/A"}
-
-## Experience
-${p.positions.map((pos) => `### ${pos.title} @ ${pos.company_name}
-${formatDateRange(pos.date_range)} | ${pos.location || ""}
-${pos.description || ""}`).join("\n\n")}
-
-## Education
-${p.educations.map((edu) => `- **${edu.school_name}**: ${[edu.degree_name, edu.field_of_study].filter(Boolean).join(", ")} (${formatDateRange(edu.date_range)})`).join("\n")}
-
-## Skills
-${p.skills.map((s) => s.name).join(", ")}
-`;
-
-  const blob = new Blob([md], { type: "text/markdown" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${p.public_identifier || "profile"}_cv.md`;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-// Modal Handlers
-const openSessionModal = () => {
-  els.inputLiAt.value = localStorage.getItem(STORAGE_LI_AT) || "";
-  els.inputJsessionid.value = localStorage.getItem(STORAGE_JSESSIONID) || "";
-  els.modalSession.classList.remove("hidden");
-};
-
-if (els.btnSession) els.btnSession.onclick = openSessionModal;
-if (els.btnBannerSession) els.btnBannerSession.onclick = openSessionModal;
-
-
-els.btnCloseModal.onclick = () => {
-  els.modalSession.classList.add("hidden");
-};
-
-els.btnSaveSession.onclick = () => {
-  const liAt = els.inputLiAt.value.trim();
-  const jsessionid = els.inputJsessionid.value.trim();
-  if (liAt && jsessionid) {
-    localStorage.setItem(STORAGE_LI_AT, liAt);
-    localStorage.setItem(STORAGE_JSESSIONID, jsessionid);
-    alert("Session cookies saved locally in your browser!");
-  } else {
-    localStorage.removeItem(STORAGE_LI_AT);
-    localStorage.removeItem(STORAGE_JSESSIONID);
-  }
-  els.modalSession.classList.add("hidden");
-  checkServerStatus();
-};
-
-els.btnClearSession.onclick = () => {
-  localStorage.removeItem(STORAGE_LI_AT);
-  localStorage.removeItem(STORAGE_JSESSIONID);
-  els.inputLiAt.value = "";
-  els.inputJsessionid.value = "";
-  alert("Cleared custom cookies.");
-  els.modalSession.classList.add("hidden");
-  checkServerStatus();
-};
-
-// Init
-checkServerStatus();
+els.sampleBtn.addEventListener("click", () => {
+  els.input.value = "https://www.linkedin.com/in/briony-sayani/";
+  hideError();
+  els.input.focus();
+  els.input.select();
+});
