@@ -4,6 +4,28 @@ from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def is_valid_cookie(val: str | None) -> bool:
+    """Check if a cookie string is provided and not a dummy/placeholder value."""
+    if not val:
+        return False
+    clean = val.strip().strip('"').strip("'")
+    if not clean or len(clean) < 6:
+        return False
+    lower = clean.lower()
+    placeholders = (
+        "your_li_at",
+        "your_jsessionid",
+        "cookie_here",
+        "placeholder",
+        "example",
+        "replace_me",
+        "1234567890123456789",
+    )
+    if any(p in lower for p in placeholders):
+        return False
+    return True
+
+
 class Settings(BaseSettings):
     """Application configuration and credentials loaded from environment."""
 
@@ -45,6 +67,10 @@ class Settings(BaseSettings):
     )
     skills_page_size: int = 50
     skills_max_pages: int = 5
+
+    @property
+    def has_valid_server_credentials(self) -> bool:
+        return is_valid_cookie(self.li_at) and is_valid_cookie(self.jsessionid)
 
 
 @lru_cache

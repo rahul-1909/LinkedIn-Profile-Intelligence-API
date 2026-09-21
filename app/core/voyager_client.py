@@ -87,6 +87,7 @@ class VoyagerClient:
             has_h2 = False
             try:
                 import h2  # noqa: F401
+
                 has_h2 = True
             except ImportError:
                 has_h2 = False
@@ -229,8 +230,7 @@ class VoyagerClient:
         skills = [
             e
             for e in included
-            if isinstance(e, dict)
-            and (e.get("$type") or e.get("type") or "").endswith("Skill")
+            if isinstance(e, dict) and (e.get("$type") or e.get("type") or "").endswith("Skill")
         ]
         if skills:
             return skills

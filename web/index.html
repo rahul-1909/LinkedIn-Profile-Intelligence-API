@@ -270,6 +270,17 @@
 
       <!-- Result Card (Populated upon fetch) -->
       <section id="result-view" class="hidden space-y-6">
+        <!-- Sandbox Notice Banner -->
+        <div id="sandbox-banner" class="hidden rounded-2xl p-4 liquid-glass-subtle border border-amber-500/20 bg-amber-500/5 text-xs text-amber-900 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <span class="text-base">💡</span>
+            <span><strong>Sandbox Demo Mode:</strong> Viewing synthesized career intelligence. Connect your LinkedIn session in Settings to extract live profile data.</span>
+          </div>
+          <button type="button" id="btn-open-session-from-banner" class="shrink-0 px-3 py-1.5 rounded-full bg-amber-600/10 text-amber-800 font-medium hover:bg-amber-600/20 transition flex items-center gap-1">
+            <span>⚙️</span> Settings
+          </button>
+        </div>
+
         <!-- Main Profile Glass Capsule -->
         <div class="liquid-glass rounded-3xl p-6 sm:p-8 space-y-6">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b border-black/5">
@@ -277,13 +288,15 @@
               <!-- Avatar -->
               <div id="profile-avatar" class="h-20 w-20 rounded-2xl bg-slate-200 overflow-hidden shadow-sm flex items-center justify-center text-2xl font-bold text-slate-700 shrink-0 border border-white"></div>
               <div class="space-y-1">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                   <h2 id="profile-name" class="text-xl sm:text-2xl font-bold text-apple-dark tracking-tight"></h2>
                   <span id="profile-seniority" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-black/5 text-slate-700"></span>
+                  <span id="sandbox-badge" class="hidden text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 border border-amber-500/30">Sandbox Persona</span>
                 </div>
                 <p id="profile-location" class="text-xs text-apple-gray flex items-center gap-1"></p>
               </div>
             </div>
+
 
             <!-- Action Buttons -->
             <div class="flex items-center gap-2">

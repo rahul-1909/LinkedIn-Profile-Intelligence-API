@@ -5,29 +5,101 @@ from app.models.profile import Position, ProfileResponse
 
 # Curated skill taxonomies for automated grouping
 TECH_LANGUAGES = {
-    "python", "javascript", "typescript", "java", "c++", "c#", "c", "go", "golang",
-    "rust", "ruby", "php", "swift", "kotlin", "scala", "sql", "html", "css", "r",
-    "bash", "shell", "dart", "matlab", "perl"
+    "python",
+    "javascript",
+    "typescript",
+    "java",
+    "c++",
+    "c#",
+    "c",
+    "go",
+    "golang",
+    "rust",
+    "ruby",
+    "php",
+    "swift",
+    "kotlin",
+    "scala",
+    "sql",
+    "html",
+    "css",
+    "r",
+    "bash",
+    "shell",
+    "dart",
+    "matlab",
+    "perl",
 }
 
 FRAMEWORKS_AND_TOOLS = {
-    "react", "react.js", "vue", "vue.js", "angular", "node.js", "nodejs", "express",
-    "fastapi", "django", "flask", "spring", "spring boot", "next.js", "docker",
-    "kubernetes", "aws", "amazon web services", "azure", "gcp", "google cloud",
-    "postgresql", "mysql", "mongodb", "redis", "elasticsearch", "git", "github",
-    "graphql", "rest api", "terraform", "ci/cd", "linux", "kafka", "pandas", "numpy",
-    "pytorch", "tensorflow", "scikit-learn"
+    "react",
+    "react.js",
+    "vue",
+    "vue.js",
+    "angular",
+    "node.js",
+    "nodejs",
+    "express",
+    "fastapi",
+    "django",
+    "flask",
+    "spring",
+    "spring boot",
+    "next.js",
+    "docker",
+    "kubernetes",
+    "aws",
+    "amazon web services",
+    "azure",
+    "gcp",
+    "google cloud",
+    "postgresql",
+    "mysql",
+    "mongodb",
+    "redis",
+    "elasticsearch",
+    "git",
+    "github",
+    "graphql",
+    "rest api",
+    "terraform",
+    "ci/cd",
+    "linux",
+    "kafka",
+    "pandas",
+    "numpy",
+    "pytorch",
+    "tensorflow",
+    "scikit-learn",
 }
 
 SOFT_AND_LEADERSHIP = {
-    "leadership", "management", "project management", "product management", "agile",
-    "scrum", "mentoring", "communication", "team leadership", "cross-functional",
-    "problem solving", "system design", "software architecture", "code review",
-    "strategic planning", "stakeholder management"
+    "leadership",
+    "management",
+    "project management",
+    "product management",
+    "agile",
+    "scrum",
+    "mentoring",
+    "communication",
+    "team leadership",
+    "cross-functional",
+    "problem solving",
+    "system design",
+    "software architecture",
+    "code review",
+    "strategic planning",
+    "stakeholder management",
 }
 
 
-def _calculate_months_between(start_year: int | None, start_month: int | None, end_year: int | None, end_month: int | None, is_current: bool) -> int:
+def _calculate_months_between(
+    start_year: int | None,
+    start_month: int | None,
+    end_year: int | None,
+    end_month: int | None,
+    is_current: bool,
+) -> int:
     current_year = datetime.now().year
     current_month = datetime.now().month
 
@@ -79,13 +151,29 @@ def _compute_career_metrics(positions: list[Position]) -> CareerMetrics:
     # Seniority level estimation
     all_titles_text = " ".join((p.title or "") for p in positions).lower()
     seniority = "Mid-Level"
-    if any(k in all_titles_text for k in ["cto", "ceo", "cfo", "coo", "founder", "co-founder", "vp ", "vice president", "director"]):
+    if any(
+        k in all_titles_text
+        for k in [
+            "cto",
+            "ceo",
+            "cfo",
+            "coo",
+            "founder",
+            "co-founder",
+            "vp ",
+            "vice president",
+            "director",
+        ]
+    ):
         seniority = "Executive / Director"
     elif any(k in all_titles_text for k in ["principal", "staff", "head of", "architect", "lead"]):
         seniority = "Staff / Principal"
     elif any(k in all_titles_text for k in ["senior", "sr.", "sr "]) or total_years >= 5:
         seniority = "Senior"
-    elif any(k in all_titles_text for k in ["intern", "trainee", "junior", "associate"]) or total_years < 2:
+    elif (
+        any(k in all_titles_text for k in ["intern", "trainee", "junior", "associate"])
+        or total_years < 2
+    ):
         seniority = "Entry-Level"
 
     # Stability Index
@@ -126,13 +214,21 @@ def _categorize_skills(skills: list[str]) -> list[SkillCategory]:
 
     categories = []
     if languages:
-        categories.append(SkillCategory(category="Programming Languages", count=len(languages), skills=languages))
+        categories.append(
+            SkillCategory(category="Programming Languages", count=len(languages), skills=languages)
+        )
     if frameworks:
-        categories.append(SkillCategory(category="Frameworks & Cloud", count=len(frameworks), skills=frameworks))
+        categories.append(
+            SkillCategory(category="Frameworks & Cloud", count=len(frameworks), skills=frameworks)
+        )
     if soft:
-        categories.append(SkillCategory(category="Architecture & Leadership", count=len(soft), skills=soft))
+        categories.append(
+            SkillCategory(category="Architecture & Leadership", count=len(soft), skills=soft)
+        )
     if other:
-        categories.append(SkillCategory(category="Domain & Other Skills", count=len(other), skills=other))
+        categories.append(
+            SkillCategory(category="Domain & Other Skills", count=len(other), skills=other)
+        )
 
     return categories
 
@@ -154,25 +250,35 @@ def _calculate_completeness_and_tips(profile: ProfileResponse) -> tuple[int, str
     if profile.headline and len(profile.headline.strip()) > 10:
         score += 15
     else:
-        tips.append("Craft an impactful headline highlighting your specialty, tech stack, or domain.")
+        tips.append(
+            "Craft an impactful headline highlighting your specialty, tech stack, or domain."
+        )
 
     # 3. Summary / About (15 pts)
     if profile.summary and len(profile.summary.strip()) > 50:
         score += 15
     elif profile.summary:
         score += 8
-        tips.append("Expand your 'About' summary to share your career story, achievements, and technical philosophy.")
+        tips.append(
+            "Expand your 'About' summary to share your career story, achievements, and technical philosophy."
+        )
     else:
-        tips.append("Add a rich 'About' summary detailing key career milestones and core proficiencies.")
+        tips.append(
+            "Add a rich 'About' summary detailing key career milestones and core proficiencies."
+        )
 
     # 4. Positions & Descriptions (25 pts)
     if profile.positions:
         score += 15
-        has_descriptions = any(bool(p.description and len(p.description.strip()) > 30) for p in profile.positions)
+        has_descriptions = any(
+            bool(p.description and len(p.description.strip()) > 30) for p in profile.positions
+        )
         if has_descriptions:
             score += 10
         else:
-            tips.append("Add quantifiable metrics (e.g. 'boosted throughput by 40%') to your role descriptions.")
+            tips.append(
+                "Add quantifiable metrics (e.g. 'boosted throughput by 40%') to your role descriptions."
+            )
     else:
         tips.append("List your work history and positions.")
 
@@ -190,7 +296,9 @@ def _calculate_completeness_and_tips(profile: ProfileResponse) -> tuple[int, str
         score += 5
         tips.append("List at least 5 core technical and industry skills.")
     else:
-        tips.append("Add your primary skills so recruiters and teammates can discover your profile.")
+        tips.append(
+            "Add your primary skills so recruiters and teammates can discover your profile."
+        )
 
     # 7. Certifications / Languages / Media (10 pts)
     extra_items = len(profile.certifications) + len(profile.languages) + len(profile.treasury_media)
@@ -199,7 +307,9 @@ def _calculate_completeness_and_tips(profile: ProfileResponse) -> tuple[int, str
     elif extra_items == 1:
         score += 5
     else:
-        tips.append("Add professional certifications or featured portfolio links to demonstrate credibility.")
+        tips.append(
+            "Add professional certifications or featured portfolio links to demonstrate credibility."
+        )
 
     score = min(max(score, 10), 100)
 
@@ -227,7 +337,11 @@ def generate_profile_intelligence(profile: ProfileResponse) -> ProfileIntelligen
     # Executive recruiter pitch
     role = metrics.current_role or "Software Professional"
     company = f" at {metrics.current_company}" if metrics.current_company else ""
-    exp_str = f"with ~{metrics.total_experience_years} years of demonstrated experience" if metrics.total_experience_years > 0 else ""
+    exp_str = (
+        f"with ~{metrics.total_experience_years} years of demonstrated experience"
+        if metrics.total_experience_years > 0
+        else ""
+    )
     skills_preview = f", specializing in {', '.join(skill_names[:3])}" if skill_names else ""
 
     recruiter_pitch = (

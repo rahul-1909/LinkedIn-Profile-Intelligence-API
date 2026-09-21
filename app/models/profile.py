@@ -78,4 +78,5 @@ class ProfileResponse(BaseModel):
     certifications: list[Certification] = Field(default_factory=list)
     languages: list[Language] = Field(default_factory=list)
     treasury_media: list[TreasuryItem] = Field(default_factory=list)
+    is_sandbox_fallback: bool = False
     fetched_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

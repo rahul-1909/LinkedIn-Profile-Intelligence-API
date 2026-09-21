@@ -2,6 +2,7 @@ import pytest
 import respx
 from httpx import ASGITransport, AsyncClient, Response
 
+from app.config import Settings
 from app.core.voyager_client import VoyagerClient
 from app.main import create_app
 from app.services.profile_service import ProfileService
@@ -110,3 +111,37 @@ async def test_upstream_401_unauthorized(mock_settings):
         )
         assert res.status_code == 401
         assert res.json()["error"] == "unauthorized"
+
+
+@pytest.mark.asyncio
+async def test_dummy_credentials_fallback_to_sandbox():
+    """Verify that placeholder credentials on server gracefully fallback to synthesized sandbox profile."""
+    dummy_settings = Settings(
+        LI_AT="your_li_at_cookie_here",
+        JSESSIONID="ajax:1234567890123456789",
+        ENABLE_SANDBOX_DEMO=True,
+    )
+    service = ProfileService(settings=dummy_settings)
+    profile = await service.get_profile("https://www.linkedin.com/in/nallarahulteja")
+    assert profile.public_identifier == "nallarahulteja"
+    assert profile.first_name == "Rahul Teja"
+    assert profile.last_name == "Nalla"
+    assert profile.is_sandbox_fallback is True
+    assert len(profile.skills) > 0
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_upstream_401_server_fallback(mock_settings):
+    """Verify that when server credentials fail with 401 and no client headers are passed, it falls back."""
+    respx.get("https://www.linkedin.com/voyager/api/identity/dash/profiles").mock(
+        return_value=Response(401, json={"message": "Unauthorized"})
+    )
+
+    voyager = VoyagerClient(mock_settings)
+    service = ProfileService(voyager=voyager, settings=mock_settings)
+
+    profile = await service.get_profile("arbitrary-slug")
+    assert profile.public_identifier == "arbitrary-slug"
+    assert profile.is_sandbox_fallback is True
+    await service.close()

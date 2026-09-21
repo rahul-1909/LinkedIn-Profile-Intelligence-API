@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime
 
 from app.models.profile import (
@@ -262,6 +263,152 @@ def get_demo_profile(slug: str) -> ProfileResponse | None:
 
 def get_default_demo_profile() -> ProfileResponse:
     return DEMO_PROFILES["priya-sharma-tech"]
+
+
+def parse_name_from_slug(slug: str) -> tuple[str, str]:
+    """Parse realistic first and last name from a vanity slug."""
+    clean = re.sub(r"\d+", "", slug).strip("-_.")
+    if not clean:
+        return "LinkedIn", "Professional"
+
+    lower = slug.lower()
+    if "nallarahulteja" in lower or "rahulteja" in lower:
+        return "Rahul Teja", "Nalla"
+    if lower in {"rahul-1909", "rahul1909"}:
+        return "Rahul", "Teja"
+
+    tokens = [p for p in re.split(r"[-_.]+", clean) if p]
+    if len(tokens) >= 2:
+        first = " ".join(t.capitalize() for t in tokens[:-1])
+        last = tokens[-1].capitalize()
+        return first, last
+
+    camel = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|$)", tokens[0])
+    if len(camel) >= 2:
+        return " ".join(t.capitalize() for t in camel[:-1]), camel[-1].capitalize()
+
+    return tokens[0].capitalize(), ""
+
+
+def create_sandbox_profile_for_slug(slug: str) -> ProfileResponse:
+    """Dynamically synthesize an intelligent sandbox profile for any user vanity slug."""
+    matched = get_demo_profile(slug)
+    if matched is not None:
+        return matched
+
+    first_name, last_name = parse_name_from_slug(slug)
+
+    return ProfileResponse(
+
+        first_name=first_name,
+        last_name=last_name,
+        headline="Senior Staff Software Engineer & Cloud Architect | Distributed Systems & Scalable Infrastructure",
+        summary=(
+            "Accomplished software engineer with 7+ years architecting scalable cloud platforms and high-throughput microservices. "
+            "Passionate about distributed consensus, event-driven architectures, and high-velocity engineering practices. "
+            "Proven track record delivering reliable software products and mentoring high-performing engineering teams."
+        ),
+        public_identifier=slug,
+        profile_url=f"https://www.linkedin.com/in/{slug}/",
+        urn=f"urn:li:fsd_profile:ACoAAB{abs(hash(slug)) % 100000000:08d}Mock",
+        location=Location(
+            city="San Francisco",
+            state="California",
+            country="US",
+            display="San Francisco Bay Area, CA, USA",
+        ),
+        profile_picture_url="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
+        cover_picture_url="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=1200",
+        positions=[
+            Position(
+                title="Lead Software Engineer",
+                company_name="CloudScale Technologies",
+                location="San Francisco, CA",
+                description=(
+                    "Architecting low-latency core platform services supporting 25M+ daily active users.\n"
+                    "- Designed fault-tolerant event ingestion pipeline cutting p99 latency by 45%.\n"
+                    "- Mentored 8 software engineers and established architectural review standards."
+                ),
+                employment_type="Full-time",
+                date_range=DateRange(start_year=2022, start_month=4, is_current=True),
+            ),
+            Position(
+                title="Senior Backend Engineer",
+                company_name="NextGen Systems",
+                location="Sunnyvale, CA",
+                description=(
+                    "Engineered asynchronous processing engines in Python, Go, and Redis.\n"
+                    "- Migrated monolithic workloads to containerized Kubernetes clusters with zero downtime."
+                ),
+                employment_type="Full-time",
+                date_range=DateRange(start_year=2019, start_month=6, end_year=2022, end_month=3),
+            ),
+            Position(
+                title="Software Engineer",
+                company_name="DataFlow Networks",
+                location="Austin, TX",
+                description="Built high-throughput REST and gRPC services for real-time telemetry streaming.",
+                employment_type="Full-time",
+                date_range=DateRange(start_year=2017, start_month=8, end_year=2019, end_month=5),
+            ),
+        ],
+        educations=[
+            Education(
+                school_name="University of California, Berkeley",
+                degree_name="Master of Science",
+                field_of_study="Computer Science & Engineering",
+                grade="3.9 GPA",
+                date_range=DateRange(start_year=2015, end_year=2017),
+            ),
+            Education(
+                school_name="Institute of Technology",
+                degree_name="Bachelor of Technology",
+                field_of_study="Computer Science",
+                grade="First Class with Distinction",
+                date_range=DateRange(start_year=2011, end_year=2015),
+            ),
+        ],
+        skills=[
+            Skill(name="Distributed Systems"),
+            Skill(name="Python"),
+            Skill(name="Go"),
+            Skill(name="FastAPI"),
+            Skill(name="Kubernetes"),
+            Skill(name="Docker"),
+            Skill(name="PostgreSQL"),
+            Skill(name="Redis"),
+            Skill(name="System Design"),
+            Skill(name="Microservices"),
+            Skill(name="AWS"),
+            Skill(name="Cloud Architecture"),
+            Skill(name="TypeScript"),
+            Skill(name="RESTful APIs"),
+            Skill(name="Kafka"),
+            Skill(name="GraphQL"),
+            Skill(name="CI/CD"),
+            Skill(name="Git"),
+        ],
+        skills_total=28,
+        certifications=[
+            Certification(
+                name="AWS Certified Solutions Architect - Professional",
+                authority="Amazon Web Services",
+                issue_date="2023",
+            ),
+            Certification(
+                name="Certified Kubernetes Administrator (CKA)",
+                authority="Linux Foundation",
+                issue_date="2022",
+            ),
+        ],
+        languages=[
+            Language(name="English", proficiency="Native or bilingual"),
+            Language(name="Hindi", proficiency="Professional working"),
+        ],
+        treasury_media=[],
+        is_sandbox_fallback=True,
+        fetched_at=datetime.now(UTC),
+    )
 
 
 def list_demo_profiles() -> list[dict[str, str]]:

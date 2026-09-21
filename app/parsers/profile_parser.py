@@ -62,11 +62,7 @@ def _build_image_url(entity: dict[str, Any] | None) -> str | None:
 
 
 def _geo_map(included: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    return {
-        e["entityUrn"]: e
-        for e in included
-        if _is_type(e, "Geo") and e.get("entityUrn")
-    }
+    return {e["entityUrn"]: e for e in included if _is_type(e, "Geo") and e.get("entityUrn")}
 
 
 def _split_geo_display(display: str | None) -> tuple[str | None, str | None, str | None]:
@@ -238,11 +234,7 @@ def merge_skill_entities(raw: dict[str, Any], extra_skills: list[dict[str, Any]]
         return raw
 
     included = list(raw.get("included") or [])
-    seen = {
-        e.get("entityUrn")
-        for e in included
-        if _is_type(e, "Skill") and e.get("entityUrn")
-    }
+    seen = {e.get("entityUrn") for e in included if _is_type(e, "Skill") and e.get("entityUrn")}
     for skill in extra_skills:
         urn = skill.get("entityUrn")
         if urn and urn in seen:
@@ -272,9 +264,8 @@ def parse_profile_response(raw: dict[str, Any]) -> dict[str, Any]:
             url = _build_image_url(pic)
             if not url:
                 continue
-            if (
-                isinstance(profile_pic_urn, str)
-                and (pic.get("entityUrn") == profile_pic_urn or pic.get("urn") == profile_pic_urn)
+            if isinstance(profile_pic_urn, str) and (
+                pic.get("entityUrn") == profile_pic_urn or pic.get("urn") == profile_pic_urn
             ):
                 profile_pic_url = profile_pic_url or url
                 continue

@@ -12,7 +12,9 @@ def test_parse_profile_response_from_fixture(sample_voyager_json):
     assert "CloudScale" in parsed["headline"]
 
     # Pictures
-    assert parsed["profile_picture_url"] == "https://media.licdn.com/dms/image/v2/mock/avatar_400.jpg"
+    assert (
+        parsed["profile_picture_url"] == "https://media.licdn.com/dms/image/v2/mock/avatar_400.jpg"
+    )
     assert parsed["cover_picture_url"] == "https://media.licdn.com/dms/image/v2/mock/cover_800.jpg"
 
     # Positions

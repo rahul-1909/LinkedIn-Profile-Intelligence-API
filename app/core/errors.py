@@ -9,12 +9,16 @@ class LinkedInProfileAPIError(Exception):
 
 
 class InvalidURLError(LinkedInProfileAPIError):
-    def __init__(self, message: str = "Invalid LinkedIn profile URL or slug", detail: str | None = None):
+    def __init__(
+        self, message: str = "Invalid LinkedIn profile URL or slug", detail: str | None = None
+    ):
         super().__init__(message, detail=detail, status_code=400)
 
 
 class UnauthorizedError(LinkedInProfileAPIError):
-    def __init__(self, message: str = "LinkedIn session expired or unauthorized", detail: str | None = None):
+    def __init__(
+        self, message: str = "LinkedIn session expired or unauthorized", detail: str | None = None
+    ):
         super().__init__(message, detail=detail, status_code=401)
 
 

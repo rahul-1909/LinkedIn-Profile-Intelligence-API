@@ -1,7 +1,14 @@
 import logging
 
-from app.config import Settings, get_settings
-from app.core.errors import ConfigurationError
+from app.config import Settings, get_settings, is_valid_cookie
+from app.core.errors import (
+    ConfigurationError,
+    ForbiddenError,
+    LinkedInProfileAPIError,
+    RateLimitError,
+    UnauthorizedError,
+    UpstreamError,
+)
 from app.core.url_normalizer import extract_vanity_slug
 from app.core.voyager_client import VoyagerClient
 from app.models.intelligence import ProfileIntelligence
@@ -9,7 +16,10 @@ from app.models.profile import ProfileResponse
 from app.parsers.intelligence_parser import generate_profile_intelligence
 from app.parsers.profile_parser import parse_profile_response
 from app.services.cache import InMemoryTTLCache
-from app.services.demo_store import get_default_demo_profile, get_demo_profile
+from app.services.demo_store import (
+    create_sandbox_profile_for_slug,
+    get_demo_profile,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,42 +61,64 @@ class ProfileService:
             self.cache.set(slug, demo_match, self.settings.cache_ttl_seconds)
             return demo_match
 
-        # 3. If no server credentials configured and sandbox enabled, fallback gracefully
-        has_server_creds = bool(self.settings.li_at and self.settings.jsessionid)
-        has_client_creds = bool(override_li_at and override_jsessionid)
+        # 3. Check credentials validity (ignoring dummy/placeholder values)
+        has_server_creds = self.settings.has_valid_server_credentials
+        has_client_creds = is_valid_cookie(override_li_at) and is_valid_cookie(override_jsessionid)
 
         if not has_server_creds and not has_client_creds:
             if self.settings.enable_sandbox_demo:
                 logger.info(
-                    "No LinkedIn session credentials configured. Serving sandbox demo profile for '%s'",
+                    "No valid LinkedIn credentials configured. Serving synthesized sandbox profile for '%s'",
                     slug,
                 )
-                sandbox_profile = get_default_demo_profile().model_copy()
-                sandbox_profile.public_identifier = slug
-                sandbox_profile.profile_url = f"https://www.linkedin.com/in/{slug}/"
+                sandbox_profile = create_sandbox_profile_for_slug(slug)
+                self.cache.set(slug, sandbox_profile, self.settings.cache_ttl_seconds)
                 return sandbox_profile
             raise ConfigurationError(
                 "LinkedIn credentials are not configured",
-                "Set LI_AT and JSESSIONID in your .env file or supply client headers.",
+                "Set LI_AT and JSESSIONID in your environment or supply client headers.",
             )
 
-        # 4. Perform live Voyager REST request
-        raw = await self.voyager.fetch_profile_raw(
-            slug,
-            override_li_at=override_li_at,
-            override_jsessionid=override_jsessionid,
-        )
-        raw = await self.voyager.enrich_with_all_skills(
-            slug,
-            raw,
-            override_li_at=override_li_at,
-            override_jsessionid=override_jsessionid,
-        )
-        parsed = parse_profile_response(raw)
-        profile = ProfileResponse.model_validate(parsed)
+        # 4. Perform live Voyager REST request with graceful fallback
+        try:
+            raw = await self.voyager.fetch_profile_raw(
+                slug,
+                override_li_at=override_li_at,
+                override_jsessionid=override_jsessionid,
+            )
+            raw = await self.voyager.enrich_with_all_skills(
+                slug,
+                raw,
+                override_li_at=override_li_at,
+                override_jsessionid=override_jsessionid,
+            )
+            parsed = parse_profile_response(raw)
+            profile = ProfileResponse.model_validate(parsed)
+            self.cache.set(slug, profile, self.settings.cache_ttl_seconds)
+            return profile
+        except (
+            UnauthorizedError,
+            ForbiddenError,
+            RateLimitError,
+            UpstreamError,
+            ConfigurationError,
+            LinkedInProfileAPIError,
+        ) as exc:
+            if has_client_creds:
+                # Custom client-supplied headers failed; let user see the direct error
+                raise exc
 
-        self.cache.set(slug, profile, self.settings.cache_ttl_seconds)
-        return profile
+            if self.settings.enable_sandbox_demo:
+                logger.warning(
+                    "Live Voyager request failed for '%s' (%s: %s). Falling back to sandbox demo.",
+                    slug,
+                    type(exc).__name__,
+                    getattr(exc, "detail", str(exc)),
+                )
+                sandbox_profile = create_sandbox_profile_for_slug(slug)
+                self.cache.set(slug, sandbox_profile, self.settings.cache_ttl_seconds)
+                return sandbox_profile
+            raise exc
 
     async def get_intelligence(
         self,

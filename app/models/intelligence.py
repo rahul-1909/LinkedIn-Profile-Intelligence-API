@@ -7,7 +7,9 @@ class CareerMetrics(BaseModel):
     total_positions: int = 0
     current_role: str | None = None
     current_company: str | None = None
-    seniority_level: str = "Mid-Level"  # Entry-Level | Mid-Level | Senior | Staff / Principal | Executive
+    seniority_level: str = (
+        "Mid-Level"  # Entry-Level | Mid-Level | Senior | Staff / Principal | Executive
+    )
     stability_index: str = "Stable"  # High Stability | Stable | Dynamic / Fast-Paced
 
 

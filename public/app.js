@@ -31,9 +31,13 @@ const els = {
   profileAvatar: document.getElementById("profile-avatar"),
   profileName: document.getElementById("profile-name"),
   profileSeniority: document.getElementById("profile-seniority"),
+  sandboxBadge: document.getElementById("sandbox-badge"),
+  sandboxBanner: document.getElementById("sandbox-banner"),
+  btnBannerSession: document.getElementById("btn-open-session-from-banner"),
   profileLocation: document.getElementById("profile-location"),
   profileLink: document.getElementById("profile-link"),
   profileHeadline: document.getElementById("profile-headline"),
+
 
   // Action buttons
   btnCopy: document.getElementById("btn-copy"),
@@ -180,6 +184,16 @@ function renderProfile(profile, intelligence) {
   const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Candidate";
   els.profileName.textContent = fullName;
   els.profileHeadline.textContent = profile.headline || "LinkedIn Member";
+
+  // Sandbox indicator
+  if (profile.is_sandbox_fallback) {
+    els.sandboxBadge?.classList.remove("hidden");
+    els.sandboxBanner?.classList.remove("hidden");
+  } else {
+    els.sandboxBadge?.classList.add("hidden");
+    els.sandboxBanner?.classList.add("hidden");
+  }
+
 
   // Avatar
   els.profileAvatar.innerHTML = "";
@@ -373,9 +387,18 @@ async function fetchProfile(urlOrSlug) {
     if (!profileRes.ok) {
       let err = null;
       try { err = await profileRes.json(); } catch {}
-      showError(err?.detail || `Request failed (${profileRes.status})`);
+      if (profileRes.status === 401) {
+        showError("LinkedIn session expired or unauthorized. Please verify your session cookies in Settings.");
+      } else if (profileRes.status === 403) {
+        showError("LinkedIn access denied. Checkpoint or security challenge active.");
+      } else if (profileRes.status === 404) {
+        showError("LinkedIn profile not found. Please check the profile URL or vanity username.");
+      } else {
+        showError(err?.detail || `Request failed (${profileRes.status}). Please try again.`);
+      }
       return;
     }
+
 
     const profile = await profileRes.json();
     const intelligence = intelRes.ok ? await intelRes.json() : null;
@@ -483,11 +506,15 @@ ${p.skills.map((s) => s.name).join(", ")}
 };
 
 // Modal Handlers
-els.btnSession.onclick = () => {
+const openSessionModal = () => {
   els.inputLiAt.value = localStorage.getItem(STORAGE_LI_AT) || "";
   els.inputJsessionid.value = localStorage.getItem(STORAGE_JSESSIONID) || "";
   els.modalSession.classList.remove("hidden");
 };
+
+if (els.btnSession) els.btnSession.onclick = openSessionModal;
+if (els.btnBannerSession) els.btnBannerSession.onclick = openSessionModal;
+
 
 els.btnCloseModal.onclick = () => {
   els.modalSession.classList.add("hidden");

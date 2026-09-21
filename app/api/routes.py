@@ -3,7 +3,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Request
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from app.config import Settings, get_settings
 from app.models.intelligence import ProfileIntelligence
@@ -13,7 +12,19 @@ from app.services.demo_store import list_demo_profiles
 from app.services.profile_service import ProfileService
 
 logger = logging.getLogger(__name__)
-limiter = Limiter(key_func=get_remote_address)
+
+
+def get_client_ip(request: Request) -> str:
+    """Safely extract remote client IP with reverse-proxy and serverless support."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client and request.client.host:
+        return request.client.host
+    return "127.0.0.1"
+
+
+limiter = Limiter(key_func=get_client_ip)
 router = APIRouter(prefix="/api", tags=["profile"])
 
 
@@ -27,7 +38,11 @@ async def get_profile_by_query(
     request: Request,
     url: Annotated[
         str,
-        Query(min_length=1, max_length=2048, description="LinkedIn profile URL or vanity username slug"),
+        Query(
+            min_length=1,
+            max_length=2048,
+            description="LinkedIn profile URL or vanity username slug",
+        ),
     ],
     x_linkedin_li_at: Annotated[str | None, Header(alias="X-LinkedIn-Li-At")] = None,
     x_linkedin_jsessionid: Annotated[str | None, Header(alias="X-LinkedIn-JSessionID")] = None,
@@ -40,7 +55,9 @@ async def get_profile_by_query(
     )
 
 
-@router.post("/profile", response_model=ProfileResponse, summary="Fetch structured profile via POST")
+@router.post(
+    "/profile", response_model=ProfileResponse, summary="Fetch structured profile via POST"
+)
 @limiter.limit(get_settings().rate_limit)
 async def get_profile_by_body(
     request: Request,
@@ -104,11 +121,13 @@ async def get_demo_profiles_list() -> list[dict[str, str]]:
     return list_demo_profiles()
 
 
-@router.get("/session/status", summary="Check current server session status and sandbox availability")
+@router.get(
+    "/session/status", summary="Check current server session status and sandbox availability"
+)
 async def get_session_status(
     settings: Settings = Depends(get_settings),
 ) -> dict[str, bool | str]:
-    has_credentials = bool(settings.li_at and settings.jsessionid)
+    has_credentials = settings.has_valid_server_credentials
     return {
         "configured": has_credentials,
         "sandbox_fallback_active": settings.enable_sandbox_demo,
