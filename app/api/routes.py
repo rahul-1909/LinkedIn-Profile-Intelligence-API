@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Request
 from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.config import Settings, get_settings
 from app.models.intelligence import ProfileIntelligence
@@ -13,23 +14,7 @@ from app.services.demo_store import list_demo_profiles
 from app.services.profile_service import ProfileService
 
 logger = logging.getLogger(__name__)
-
-
-
-def get_client_ip(request: Request) -> str:
-    """Safely extract remote client IP with reverse-proxy and serverless support."""
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    if request.client and request.client.host:
-        return request.client.host
-    return "127.0.0.1"
-
-
-limiter = Limiter(
-    key_func=get_client_ip,
-    enabled=not bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")),
-)
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api", tags=["profile"])
 
 
