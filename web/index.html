@@ -1,113 +1,140 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Next-Generation LinkedIn Profile Intelligence & Voyager REST Engine. Real-time career analytics, completeness scoring, and structured extraction." />
-    <title>IntelLens — Next-Gen LinkedIn Profile Intelligence Engine</title>
+    <meta name="description" content="LinkedIn Profile Intelligence API — Fast, clean, structured LinkedIn profile data and career intelligence." />
+    <title>Profile Intelligence — Apple Liquid Glass</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
         theme: {
           extend: {
             colors: {
-              space: {
-                950: "#050811",
-                900: "#090d1a",
-                850: "#0e1426",
-                800: "#141c33",
-                700: "#1f2b4d",
-              },
-              neon: {
-                cyan: "#00f0ff",
-                blue: "#3b82f6",
-                indigo: "#6366f1",
-                purple: "#a855f7",
-                emerald: "#10b981",
+              apple: {
+                blue: "#0071e3",
+                hover: "#0077ed",
+                gray: "#86868b",
+                dark: "#1d1d1f",
+                card: "rgba(255, 255, 255, 0.75)",
               },
             },
             fontFamily: {
-              sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
-              mono: ["JetBrains Mono", "Consolas", "monospace"],
-            },
-            boxShadow: {
-              'neon-cyan': '0 0 35px -5px rgba(0, 240, 255, 0.25)',
-              'neon-purple': '0 0 35px -5px rgba(168, 85, 247, 0.25)',
-              'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.45)',
+              sans: [
+                "-apple-system",
+                "BlinkMacSystemFont",
+                '"SF Pro Display"',
+                '"SF Pro Text"',
+                '"Helvetica Neue"',
+                "Inter",
+                "sans-serif",
+              ],
+              mono: ['"SF Mono"', "Menlo", "Monaco", "Consolas", "monospace"],
             },
           },
         },
       };
     </script>
-    <!-- Fonts -->
+    <!-- Google Fonts for non-Apple OS fallback -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <style>
+      /* Apple Liquid Glass Studio Canvas */
       body {
-        background-color: #050811;
-        background-image: 
-          radial-gradient(at 15% 15%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-          radial-gradient(at 85% 10%, rgba(0, 240, 255, 0.08) 0px, transparent 50%),
-          radial-gradient(at 50% 85%, rgba(168, 85, 247, 0.10) 0px, transparent 60%);
+        background: 
+          radial-gradient(at 0% 0%, rgba(219, 234, 254, 0.5) 0, transparent 45%),
+          radial-gradient(at 100% 0%, rgba(243, 232, 255, 0.5) 0, transparent 45%),
+          radial-gradient(at 50% 100%, rgba(224, 242, 254, 0.4) 0, transparent 50%),
+          #f5f5f7;
         background-attachment: fixed;
+        color: #1d1d1f;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
-      .glass-panel {
-        background: rgba(14, 20, 38, 0.65);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.07);
+
+      /* Liquid Glass Materials */
+      .liquid-glass {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(28px) saturate(190%);
+        -webkit-backdrop-filter: blur(28px) saturate(190%);
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        box-shadow: 
+          0 10px 30px -10px rgba(0, 0, 0, 0.05),
+          0 1px 2px 0 rgba(0, 0, 0, 0.02),
+          inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
       }
-      .glass-panel:hover {
-        border-color: rgba(255, 255, 255, 0.14);
+
+      .liquid-glass-subtle {
+        background: rgba(255, 255, 255, 0.55);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        box-shadow: 
+          0 6px 20px -6px rgba(0, 0, 0, 0.03),
+          inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
       }
-      .glass-input {
-        background: rgba(9, 13, 26, 0.85);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+
+      .liquid-input {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 
+          0 12px 35px -8px rgba(0, 0, 0, 0.07),
+          inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       }
-      .glass-input:focus-within {
-        border-color: rgba(0, 240, 255, 0.5);
-        box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
+
+      .liquid-input:focus-within {
+        border-color: rgba(0, 113, 227, 0.4);
+        box-shadow: 
+          0 16px 45px -8px rgba(0, 113, 227, 0.15),
+          0 0 0 4px rgba(0, 113, 227, 0.12),
+          inset 0 1px 1px 0 rgba(255, 255, 255, 1);
       }
-      .text-glow-cyan {
-        text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+
+      .liquid-button {
+        background: #0071e3;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       }
-      .pulse-ring {
-        animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+      .liquid-button:hover {
+        background: #0077ed;
+        transform: translateY(-0.5px);
+        box-shadow: 0 4px 14px rgba(0, 113, 227, 0.25);
       }
-      @keyframes pulse-ring {
-        0% { transform: scale(0.95); opacity: 0.8; }
-        50% { transform: scale(1.08); opacity: 0.3; }
-        100% { transform: scale(0.95); opacity: 0.8; }
+      .liquid-button:active {
+        transform: translateY(0.5px);
       }
+
+      /* Apple-style Segmented Control */
+      .segmented-control {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 3px;
+        border-radius: 9999px;
+      }
+      .segmented-item {
+        border-radius: 9999px;
+        transition: all 0.2s ease;
+      }
+      .segmented-item.active {
+        background: #ffffff;
+        color: #1d1d1f;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        font-weight: 600;
+      }
+
       .spinner {
-        width: 1.2rem;
-        height: 1.2rem;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-top-color: #00f0ff;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #ffffff;
         border-radius: 9999px;
         animation: spin 0.6s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
-      .fade-up {
-        animation: fadeUp 0.4s ease-out forwards;
-      }
-      @keyframes fadeUp {
-        from { opacity: 0; transform: translateY(12px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .timeline-glow::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 11px;
-        width: 2px;
-        background: linear-gradient(180deg, #00f0ff 0%, #6366f1 50%, #a855f7 100%);
-      }
+
       .summary-clamp {
         display: -webkit-box;
         -webkit-line-clamp: 4;
@@ -116,403 +143,328 @@
       }
     </style>
   </head>
-  <body class="text-slate-200 antialiased min-h-screen flex flex-col selection:bg-neon-cyan/20 selection:text-neon-cyan">
-    <!-- Top Cyber-Glass Navigation -->
-    <header class="sticky top-0 z-50 glass-panel border-b border-white/5">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <!-- Logo Brand -->
-        <div class="flex items-center gap-3.5">
-          <div class="relative">
-            <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-base shadow-neon-cyan">
-              ⚡
-            </div>
-            <span class="absolute -bottom-1 -right-1 flex h-3 w-3">
-              <span class="pulse-ring absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-base font-extrabold text-white tracking-tight leading-none">
-                Intel<span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-indigo-400">Lens</span>
-              </span>
-              <span class="text-[10px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-full bg-cyan-500/10 text-neon-cyan border border-cyan-500/20">
-                PRO INTEL
-              </span>
-            </div>
-            <span class="text-[11px] text-slate-400 font-mono tracking-wide">LinkedIn Voyager REST Engine</span>
-          </div>
-        </div>
+  <body class="min-h-screen flex flex-col font-sans">
+    <!-- Floating Apple Dynamic Island Nav -->
+    <div class="sticky top-4 z-50 max-w-4xl mx-auto w-full px-4">
+      <nav class="liquid-glass rounded-full px-5 py-2.5 flex items-center justify-between">
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-2.5">
+          <span class="h-7 w-7 rounded-full bg-apple-dark text-white flex items-center justify-center text-xs font-bold">
+            ⌘
+          </span>
+          <span class="text-xs sm:text-sm font-semibold tracking-tight text-apple-dark">
+            Profile Intelligence
+          </span>
+        </a>
 
-        <!-- Controls & Links -->
-        <div class="flex items-center gap-3">
-          <div id="mode-badge" class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="mode-badge-label">SANDBOX MODE ACTIVE</span>
+        <!-- Status & Links -->
+        <div class="flex items-center gap-2 sm:gap-3 text-xs">
+          <div id="mode-pill" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 font-medium">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            <span id="mode-text">Sandbox Active</span>
           </div>
-          <button id="btn-open-credentials" class="px-3 py-1.5 rounded-xl glass-panel text-xs font-semibold text-slate-300 hover:text-white hover:border-cyan-500/40 transition flex items-center gap-1.5">
-            <svg class="h-3.5 w-3.5 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-            <span>Live Session</span>
+
+          <button id="btn-session" class="px-3 py-1 rounded-full text-slate-600 hover:text-slate-900 font-medium hover:bg-black/5 transition">
+            Session
           </button>
-          <a href="/docs" target="_blank" rel="noopener noreferrer" class="hidden md:inline-flex px-3 py-1.5 rounded-xl glass-panel text-xs font-semibold text-slate-300 hover:text-white hover:border-indigo-500/40 transition items-center gap-1">
-            API Specs ↗
+
+          <a href="/docs" target="_blank" class="hidden sm:inline-block px-3 py-1 rounded-full text-slate-600 hover:text-slate-900 font-medium hover:bg-black/5 transition">
+            API Docs
           </a>
-          <a href="https://github.com/rahul-1909/LinkedIn-Profile-Intelligence-API" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl bg-white text-slate-950 font-bold text-xs hover:bg-slate-200 transition flex items-center gap-1.5 shadow-md">
-            <svg class="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+
+          <a href="https://github.com/rahul-1909/LinkedIn-Profile-Intelligence-API" target="_blank" class="px-3.5 py-1 rounded-full bg-apple-dark text-white font-medium hover:bg-black transition">
             GitHub
           </a>
         </div>
-      </div>
-    </header>
+      </nav>
+    </div>
 
-    <!-- Main Content Canvas -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
-      <!-- Futuristic Hero Section -->
-      <section class="text-center max-w-4xl mx-auto space-y-4">
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono font-semibold bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-purple-500/10 text-neon-cyan border border-cyan-500/20 shadow-neon-cyan">
-          <span class="h-1.5 w-1.5 rounded-full bg-neon-cyan animate-ping"></span>
-          Sub-300ms Voyager REST 2.0 • AI-Driven Career Telemetry
-        </div>
-        <h1 class="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight">
-          LinkedIn Profile <br class="hidden sm:block" />
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan via-indigo-400 to-purple-400 text-glow-cyan">
-            Intelligence Engine
-          </span>
+    <!-- Main View -->
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-12 space-y-10">
+      <!-- Minimalist Hero Header -->
+      <section class="text-center space-y-3">
+        <h1 class="text-3xl sm:text-5xl font-bold tracking-tight text-apple-dark">
+          LinkedIn Profile Intelligence
         </h1>
-        <p class="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto font-normal">
-          Extract high-resolution entities, track multi-year tenure stability, calculate seniority tiers, and generate automated executive recruiter briefs instantly.
+        <p class="text-sm sm:text-base text-apple-gray max-w-xl mx-auto font-normal leading-relaxed">
+          Clean, structured data extraction powered by direct Voyager REST with real-time career analytics.
         </p>
       </section>
 
-      <!-- Glass Input Command Center -->
-      <section class="max-w-3xl mx-auto space-y-3">
-        <form id="profile-form" class="glass-input p-2 rounded-2xl shadow-glass flex flex-col sm:flex-row gap-2 transition">
-          <div class="relative flex-1 flex items-center">
-            <span class="pl-4 pr-2 text-slate-500">
-              <svg class="h-5 w-5 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            </span>
-            <input
-              id="profile-query"
-              type="text"
-              autocomplete="off"
-              spellcheck="false"
-              placeholder="Enter LinkedIn vanity username or full URL (e.g. satyanadella)"
-              class="w-full bg-transparent py-3 pr-4 text-sm text-white placeholder:text-slate-500 outline-none font-mono"
-            />
+      <!-- Liquid Glass Search Pill -->
+      <section class="space-y-4">
+        <form id="search-form" class="liquid-input rounded-full p-2 flex items-center gap-2">
+          <div class="pl-4 text-slate-400 flex items-center">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
+          <input
+            id="url-input"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Paste LinkedIn URL or username (e.g. satyanadella)"
+            class="flex-1 bg-transparent py-2.5 text-sm text-apple-dark placeholder:text-slate-400 outline-none"
+          />
           <button
-            id="btn-analyze"
+            id="submit-btn"
             type="submit"
-            class="h-12 px-7 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:opacity-90 text-white font-bold text-sm tracking-wide shadow-neon-cyan transition flex items-center justify-center gap-2.5 shrink-0 disabled:opacity-50"
+            class="liquid-button text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-full flex items-center gap-2 shrink-0 disabled:opacity-50"
           >
-            <span id="analyze-label">Analyze Profile</span>
-            <span id="analyze-spinner" class="spinner hidden"></span>
-            <span id="analyze-arrow">→</span>
+            <span id="btn-label">Analyze</span>
+            <span id="btn-spinner" class="spinner hidden"></span>
           </button>
         </form>
 
-        <!-- Demo Persona Quick Selectors -->
-        <div class="flex flex-wrap items-center justify-between gap-2 px-2 text-xs font-mono">
-          <div class="flex flex-wrap items-center gap-2 text-slate-400">
-            <span class="text-slate-500">Demo Presets:</span>
-            <button type="button" data-demo-slug="priya-sharma-tech" class="btn-demo-preset px-2.5 py-1 rounded-lg glass-panel hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center gap-1.5">
-              <span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span> Priya (Staff Eng @ Stripe)
-            </button>
-            <button type="button" data-demo-slug="alex-chen-dev" class="btn-demo-preset px-2.5 py-1 rounded-lg glass-panel hover:border-indigo-500/50 text-slate-300 hover:text-white transition flex items-center gap-1.5">
-              <span class="h-1.5 w-1.5 rounded-full bg-indigo-400"></span> Alex (AI Researcher @ Anthropic)
-            </button>
-            <button type="button" data-demo-slug="marcus-vance-pm" class="btn-demo-preset px-2.5 py-1 rounded-lg glass-panel hover:border-purple-500/50 text-slate-300 hover:text-white transition flex items-center gap-1.5">
-              <span class="h-1.5 w-1.5 rounded-full bg-purple-400"></span> Marcus (VP Product @ Snowflake)
-            </button>
-          </div>
-          <span class="text-slate-500 text-[11px]">No cookies needed for demo personas</span>
+        <!-- Minimalist Demo Pills -->
+        <div class="flex flex-wrap items-center justify-center gap-2 text-xs text-apple-gray">
+          <span>Try:</span>
+          <button type="button" data-demo="priya-sharma-tech" class="demo-chip px-3 py-1 rounded-full liquid-glass-subtle hover:bg-white text-slate-700 font-medium transition">
+            Priya (Staff Eng @ Stripe)
+          </button>
+          <button type="button" data-demo="alex-chen-dev" class="demo-chip px-3 py-1 rounded-full liquid-glass-subtle hover:bg-white text-slate-700 font-medium transition">
+            Alex (AI Researcher @ Anthropic)
+          </button>
+          <button type="button" data-demo="marcus-vance-pm" class="demo-chip px-3 py-1 rounded-full liquid-glass-subtle hover:bg-white text-slate-700 font-medium transition">
+            Marcus (VP Product @ Snowflake)
+          </button>
         </div>
 
-        <!-- Error Notification Toast -->
-        <div id="error-toast" class="hidden p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-mono fade-up flex items-center gap-2">
-          <span>⚠️</span>
-          <span id="error-toast-msg"></span>
-        </div>
+        <!-- Clean Error Banner -->
+        <div id="error-banner" class="hidden p-3.5 rounded-2xl bg-red-50/80 border border-red-200/80 text-red-700 text-xs text-center font-medium"></div>
       </section>
 
-      <!-- Welcome Bento Feature Showcase (Shown when idle) -->
-      <section id="idle-showcase" class="max-w-5xl mx-auto grid sm:grid-cols-3 gap-6 pt-4">
-        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
-          <div class="absolute -right-8 -top-8 w-24 h-24 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition"></div>
-          <div class="h-10 w-10 rounded-xl bg-cyan-500/10 text-neon-cyan border border-cyan-500/20 flex items-center justify-center font-bold text-lg mb-4">
+      <!-- Welcome Overview Cards (Idle State) -->
+      <section id="idle-cards" class="grid sm:grid-cols-3 gap-5 pt-2">
+        <div class="liquid-glass p-6 rounded-3xl space-y-2">
+          <div class="h-8 w-8 rounded-full bg-blue-50 text-apple-blue flex items-center justify-center text-sm font-bold">
             ⚡
           </div>
-          <h3 class="font-bold text-white text-base mb-2">Direct Rest.li 2.0</h3>
-          <p class="text-xs text-slate-400 leading-relaxed font-sans">
-            Bypasses heavyweight browser runtimes. Communicates directly with Voyager REST profile entities in under 300 milliseconds.
+          <h3 class="text-sm font-semibold text-apple-dark">Direct Voyager REST</h3>
+          <p class="text-xs text-apple-gray leading-relaxed">
+            Consumes LinkedIn's internal Rest.li 2.0 entity graph in under 300ms. No browser automation or fragile DOM scraping.
           </p>
         </div>
 
-        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
-          <div class="absolute -right-8 -top-8 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition"></div>
-          <div class="h-10 w-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-bold text-lg mb-4">
-            🧠
+        <div class="liquid-glass p-6 rounded-3xl space-y-2">
+          <div class="h-8 w-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-sm font-bold">
+            📊
           </div>
-          <h3 class="font-bold text-white text-base mb-2">Career Telemetry</h3>
-          <p class="text-xs text-slate-400 leading-relaxed font-sans">
-            Computes career tenure velocity, seniority rank, profile completeness scores, and taxonomy clustering for all listed skills.
+          <h3 class="text-sm font-semibold text-apple-dark">Career Telemetry</h3>
+          <p class="text-xs text-apple-gray leading-relaxed">
+            Computes career tenure velocity, seniority rank, profile completeness scores, and taxonomy breakdown for all skills.
           </p>
         </div>
 
-        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
-          <div class="absolute -right-8 -top-8 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition"></div>
-          <div class="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center font-bold text-lg mb-4">
-            📦
+        <div class="liquid-glass p-6 rounded-3xl space-y-2">
+          <div class="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
+            📄
           </div>
-          <h3 class="font-bold text-white text-base mb-2">Multi-Format Vault</h3>
-          <p class="text-xs text-slate-400 leading-relaxed font-sans">
-            Export structured JSON, download clean LLM-ready Markdown resumes, and generate ready-to-run API snippets in cURL, Python & Node.
+          <h3 class="text-sm font-semibold text-apple-dark">Clean Exports</h3>
+          <p class="text-xs text-apple-gray leading-relaxed">
+            One-click JSON downloads and clean Markdown resumes ready for LLM workflows, applicant trackers, or notes.
           </p>
         </div>
       </section>
 
-      <!-- Active Profile Bento Display (Hidden until fetched) -->
-      <section id="active-profile-view" class="hidden max-w-6xl mx-auto space-y-6 fade-up">
-        <!-- Profile Header Glass Card -->
-        <div class="glass-panel rounded-3xl overflow-hidden shadow-glass relative border border-white/10">
-          <!-- Ambient Cover Backdrop -->
-          <div id="p-cover" class="h-44 sm:h-64 bg-gradient-to-r from-space-900 via-indigo-950 to-space-950 bg-cover bg-center relative">
-            <div class="absolute inset-0 bg-gradient-to-t from-space-900 via-space-900/30 to-transparent"></div>
+      <!-- Result Card (Populated upon fetch) -->
+      <section id="result-view" class="hidden space-y-6">
+        <!-- Main Profile Glass Capsule -->
+        <div class="liquid-glass rounded-3xl p-6 sm:p-8 space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b border-black/5">
+            <div class="flex items-center gap-4">
+              <!-- Avatar -->
+              <div id="profile-avatar" class="h-20 w-20 rounded-2xl bg-slate-200 overflow-hidden shadow-sm flex items-center justify-center text-2xl font-bold text-slate-700 shrink-0 border border-white"></div>
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <h2 id="profile-name" class="text-xl sm:text-2xl font-bold text-apple-dark tracking-tight"></h2>
+                  <span id="profile-seniority" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-black/5 text-slate-700"></span>
+                </div>
+                <p id="profile-location" class="text-xs text-apple-gray flex items-center gap-1"></p>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2">
+              <a id="profile-link" href="#" target="_blank" class="px-3.5 py-1.5 rounded-full liquid-glass-subtle text-xs font-semibold text-apple-blue hover:bg-white transition flex items-center gap-1">
+                LinkedIn ↗
+              </a>
+              <button id="btn-copy" class="px-3.5 py-1.5 rounded-full liquid-glass-subtle text-xs font-medium text-slate-700 hover:bg-white transition">
+                Copy JSON
+              </button>
+              <button id="btn-download" class="px-3.5 py-1.5 rounded-full liquid-glass-subtle text-xs font-medium text-slate-700 hover:bg-white transition">
+                Download JSON
+              </button>
+              <button id="btn-export-md" class="px-4 py-1.5 rounded-full bg-apple-dark text-white text-xs font-medium hover:bg-black transition">
+                Export CV
+              </button>
+            </div>
           </div>
 
-          <!-- Identity Grid -->
-          <div class="px-6 sm:px-8 pb-8 pt-0 relative -mt-16 sm:-mt-20 space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
-              <div class="flex items-end gap-5">
-                <!-- Avatar with Neon Halo -->
-                <div class="relative shrink-0">
-                  <div id="p-avatar" class="h-28 w-28 sm:h-36 sm:w-36 rounded-2xl border-2 border-neon-cyan/50 bg-space-900 shadow-neon-cyan overflow-hidden flex items-center justify-center text-3xl font-black text-neon-cyan"></div>
-                </div>
-                <div class="pb-1 space-y-1">
-                  <div class="flex flex-wrap items-center gap-2.5">
-                    <h2 id="p-name" class="text-2xl sm:text-3xl font-black text-white tracking-tight"></h2>
-                    <span id="p-seniority-badge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                      Senior Staff
-                    </span>
-                  </div>
-                  <p id="p-location" class="text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                    <span class="text-neon-cyan">📍</span> <span id="p-location-text"></span>
-                  </p>
-                </div>
-              </div>
+          <!-- Headline -->
+          <p id="profile-headline" class="text-sm sm:text-base text-slate-800 leading-relaxed font-normal"></p>
 
-              <!-- Action Bar (Export & LinkedIn) -->
-              <div class="flex flex-wrap items-center gap-2">
-                <a id="p-linkedin-link" href="#" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl glass-panel text-xs font-mono font-semibold text-neon-cyan hover:border-cyan-500 transition flex items-center gap-1.5">
-                  LinkedIn Profile ↗
-                </a>
-                <button id="btn-action-copy-json" class="px-3 py-1.5 rounded-xl glass-panel text-xs font-mono font-semibold text-slate-300 hover:text-white hover:border-white/30 transition">
-                  📋 Copy JSON
-                </button>
-                <button id="btn-action-export-md" class="px-3 py-1.5 rounded-xl glass-panel text-xs font-mono font-semibold text-slate-300 hover:text-white hover:border-white/30 transition">
-                  📝 Markdown CV
-                </button>
-                <button id="btn-action-download-json" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-white font-mono font-bold text-xs shadow-neon-cyan hover:opacity-90 transition">
-                  ⬇ Download JSON
-                </button>
-              </div>
+          <!-- 4 Clean Metric Capsules -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="liquid-glass-subtle p-3.5 rounded-2xl text-center">
+              <span class="block text-[11px] font-medium text-apple-gray">Completeness</span>
+              <span id="metric-score" class="text-base font-bold text-apple-blue">--</span>
             </div>
-
-            <!-- Headline -->
-            <p id="p-headline" class="text-sm sm:text-base text-slate-300 font-medium leading-relaxed max-w-4xl"></p>
-
-            <!-- Career Telemetry KPI Row -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-4 border-t border-white/5 font-mono">
-              <div class="glass-panel p-3.5 rounded-2xl border-white/5 text-center">
-                <span class="text-[10px] uppercase font-semibold text-slate-400 tracking-widest block">Profile Score</span>
-                <span id="kpi-score" class="text-xl font-black text-neon-cyan">--</span>
-              </div>
-              <div class="glass-panel p-3.5 rounded-2xl border-white/5 text-center">
-                <span class="text-[10px] uppercase font-semibold text-slate-400 tracking-widest block">Total Tenure</span>
-                <span id="kpi-experience" class="text-xl font-black text-white">--</span>
-              </div>
-              <div class="glass-panel p-3.5 rounded-2xl border-white/5 text-center">
-                <span class="text-[10px] uppercase font-semibold text-slate-400 tracking-widest block">Avg Role Duration</span>
-                <span id="kpi-tenure" class="text-xl font-black text-indigo-400">--</span>
-              </div>
-              <div class="glass-panel p-3.5 rounded-2xl border-white/5 text-center">
-                <span class="text-[10px] uppercase font-semibold text-slate-400 tracking-widest block">Stability Index</span>
-                <span id="kpi-stability" class="text-xl font-black text-emerald-400">--</span>
-              </div>
+            <div class="liquid-glass-subtle p-3.5 rounded-2xl text-center">
+              <span class="block text-[11px] font-medium text-apple-gray">Experience</span>
+              <span id="metric-experience" class="text-base font-bold text-apple-dark">--</span>
             </div>
-
-            <!-- AI Recruiter One-Liner Box -->
-            <div class="p-4 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-indigo-950/40 to-space-900 border border-cyan-500/20 space-y-1">
-              <div class="flex items-center gap-2 text-xs font-mono font-bold text-neon-cyan">
-                <span>🤖</span> RECRUITER EXECUTIVE TELEMETRY
-              </div>
-              <p id="p-recruiter-brief" class="text-xs text-slate-300 leading-relaxed font-sans"></p>
+            <div class="liquid-glass-subtle p-3.5 rounded-2xl text-center">
+              <span class="block text-[11px] font-medium text-apple-gray">Avg Tenure</span>
+              <span id="metric-tenure" class="text-base font-bold text-apple-dark">--</span>
             </div>
+            <div class="liquid-glass-subtle p-3.5 rounded-2xl text-center">
+              <span class="block text-[11px] font-medium text-apple-gray">Stability</span>
+              <span id="metric-stability" class="text-base font-bold text-emerald-600">--</span>
+            </div>
+          </div>
+
+          <!-- Recruiter AI Pitch -->
+          <div class="p-4 rounded-2xl bg-blue-50/60 border border-blue-100/80 text-xs text-slate-700 space-y-1">
+            <span class="font-semibold text-apple-blue block text-[11px] uppercase tracking-wider">Recruiter Executive Briefing</span>
+            <p id="recruiter-pitch" class="leading-relaxed"></p>
           </div>
         </div>
 
-        <!-- Navigation Tabs for Detailed Views -->
-        <div class="flex items-center gap-2 border-b border-white/10 font-mono text-xs">
-          <button id="view-tab-timeline" class="view-tab px-4 py-2.5 font-bold border-b-2 border-neon-cyan text-neon-cyan">1. Career & Skills</button>
-          <button id="view-tab-intelligence" class="view-tab px-4 py-2.5 font-semibold text-slate-400 hover:text-white">2. Intelligence & Score</button>
-          <button id="view-tab-json" class="view-tab px-4 py-2.5 font-semibold text-slate-400 hover:text-white">3. Raw REST JSON</button>
-          <button id="view-tab-code" class="view-tab px-4 py-2.5 font-semibold text-slate-400 hover:text-white">4. API Integration</button>
+        <!-- Apple Segmented Control Tabs -->
+        <div class="flex justify-center">
+          <div class="segmented-control inline-flex text-xs font-medium text-slate-600">
+            <button id="tab-overview" class="segmented-item active px-5 py-1.5">Overview</button>
+            <button id="tab-intel" class="segmented-item px-5 py-1.5">Intelligence</button>
+            <button id="tab-json" class="segmented-item px-5 py-1.5">JSON</button>
+            <button id="tab-code" class="segmented-item px-5 py-1.5">API Snippets</button>
+          </div>
         </div>
 
-        <!-- TAB PANE 1: Career & Skills Bento -->
-        <div id="pane-timeline" class="view-pane space-y-6">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Left Column: About & Experience -->
-            <div class="lg:col-span-2 space-y-6">
-              <!-- About -->
-              <div id="p-section-about" class="glass-panel p-6 rounded-2xl space-y-3">
-                <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center justify-between">
-                  <span>Executive Bio</span>
-                  <span class="text-[11px] text-slate-500 font-normal">About</span>
-                </h3>
-                <p id="p-summary" class="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line summary-clamp"></p>
-                <button id="btn-summary-toggle" class="text-xs font-mono font-bold text-neon-cyan hover:underline hidden">Show more</button>
-              </div>
+        <!-- PANE 1: Overview (Experience & Skills) -->
+        <div id="pane-overview" class="space-y-6">
+          <!-- About -->
+          <div id="section-about" class="liquid-glass p-6 sm:p-7 rounded-3xl space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-apple-gray">About</h3>
+            <p id="profile-summary" class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line summary-clamp"></p>
+            <button id="summary-toggle" class="text-xs font-semibold text-apple-blue hover:underline hidden">Show more</button>
+          </div>
 
-              <!-- Experience Timeline -->
-              <div class="glass-panel p-6 rounded-2xl space-y-6">
-                <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-slate-300">Work Experience</h3>
-                <div id="p-positions-container" class="space-y-6 relative ml-3 pl-7 timeline-glow"></div>
+          <!-- Experience & Education Grid -->
+          <div class="grid sm:grid-cols-3 gap-6">
+            <!-- Experience (2 Cols) -->
+            <div class="sm:col-span-2 liquid-glass p-6 sm:p-7 rounded-3xl space-y-5">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-apple-gray">Work Experience</h3>
+              <div id="positions-container" class="space-y-5"></div>
+            </div>
+
+            <!-- Right Col: Skills & Education -->
+            <div class="space-y-6">
+              <!-- Skills -->
+              <div class="liquid-glass p-6 rounded-3xl space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-apple-gray">Skills</h3>
+                  <span id="skills-total" class="text-[11px] font-medium text-apple-gray"></span>
+                </div>
+                <div id="skills-cloud" class="flex flex-wrap gap-1.5"></div>
               </div>
 
               <!-- Education -->
-              <div class="glass-panel p-6 rounded-2xl space-y-4">
-                <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-slate-300">Academic Background</h3>
-                <div id="p-educations-container" class="space-y-4"></div>
-              </div>
-            </div>
-
-            <!-- Right Column: Skills, Certifications, Languages, Highlights -->
-            <div class="space-y-6">
-              <!-- Skills -->
-              <div class="glass-panel p-6 rounded-2xl space-y-4">
-                <div class="flex items-center justify-between">
-                  <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-slate-300">Skills</h3>
-                  <span id="p-skills-count" class="text-xs font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-neon-cyan border border-cyan-500/20"></span>
-                </div>
-                <div id="p-skills-cloud" class="flex flex-wrap gap-1.5"></div>
+              <div class="liquid-glass p-6 rounded-3xl space-y-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-apple-gray">Education</h3>
+                <div id="educations-container" class="space-y-3"></div>
               </div>
 
               <!-- Certifications -->
-              <div id="p-section-certs" class="glass-panel p-6 rounded-2xl space-y-3 hidden">
-                <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-slate-300">Certifications</h3>
-                <div id="p-certs-container" class="space-y-3 font-mono text-xs"></div>
+              <div id="section-certs" class="liquid-glass p-6 rounded-3xl space-y-3 hidden">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-apple-gray">Certifications</h3>
+                <div id="certs-container" class="space-y-2 text-xs"></div>
               </div>
 
               <!-- Languages -->
-              <div id="p-section-languages" class="glass-panel p-6 rounded-2xl space-y-3 hidden">
-                <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-slate-300">Languages</h3>
-                <div id="p-languages-container" class="space-y-2 text-xs"></div>
-              </div>
-
-              <!-- Featured Media -->
-              <div id="p-section-media" class="glass-panel p-6 rounded-2xl space-y-3 hidden">
-                <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-slate-300">Featured Media</h3>
-                <div id="p-media-container" class="space-y-2 text-xs"></div>
+              <div id="section-languages" class="liquid-glass p-6 rounded-3xl space-y-3 hidden">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-apple-gray">Languages</h3>
+                <div id="languages-container" class="space-y-2 text-xs"></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- TAB PANE 2: Intelligence & Optimization -->
-        <div id="pane-intelligence" class="view-pane hidden space-y-6">
-          <div class="glass-panel p-6 rounded-2xl space-y-4">
-            <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-neon-cyan">Profile Optimization Recommendations</h3>
-            <p class="text-xs text-slate-400">Heuristic audit identifying opportunities to maximize visibility, trust, and search discovery.</p>
-            <div id="p-intel-tips" class="space-y-3"></div>
+        <!-- PANE 2: Intelligence & Audit -->
+        <div id="pane-intel" class="hidden space-y-6">
+          <div class="liquid-glass p-6 sm:p-7 rounded-3xl space-y-4">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-apple-gray">Optimization Recommendations</h3>
+            <div id="tips-container" class="space-y-2.5"></div>
           </div>
 
-          <div class="glass-panel p-6 rounded-2xl space-y-4">
-            <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-indigo-400">Skill Domain Taxonomy Breakdown</h3>
-            <div id="p-intel-clusters" class="grid sm:grid-cols-2 gap-4"></div>
-          </div>
-        </div>
-
-        <!-- TAB PANE 3: Raw JSON Inspector -->
-        <div id="pane-json" class="view-pane hidden">
-          <div class="glass-panel p-5 rounded-2xl space-y-3">
-            <div class="flex items-center justify-between border-b border-white/5 pb-3">
-              <span class="font-mono text-xs text-slate-400">application/json • Normalized Voyager REST Entity Graph</span>
-              <button id="btn-copy-json-tab" class="px-3 py-1 rounded-lg glass-panel font-mono text-xs text-neon-cyan hover:border-cyan-500 transition">
-                Copy JSON
-              </button>
-            </div>
-            <pre id="raw-json-display" class="font-mono text-xs text-emerald-400 bg-space-950/80 p-4 rounded-xl overflow-x-auto max-h-[600px] leading-relaxed border border-white/5"></pre>
+          <div class="liquid-glass p-6 sm:p-7 rounded-3xl space-y-4">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-apple-gray">Skill Domain Groupings</h3>
+            <div id="clusters-container" class="grid sm:grid-cols-2 gap-3.5"></div>
           </div>
         </div>
 
-        <!-- TAB PANE 4: Code Integration -->
-        <div id="pane-code" class="view-pane hidden space-y-4 font-mono">
-          <div class="glass-panel p-6 rounded-2xl space-y-6">
-            <div>
-              <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-                <span class="text-neon-cyan font-bold"># cURL</span>
-                <span class="text-[11px]">HTTP/2 Ready</span>
-              </div>
-              <pre id="snippet-curl" class="text-xs text-slate-200 bg-space-950 p-4 rounded-xl overflow-x-auto border border-white/5"></pre>
+        <!-- PANE 3: Raw JSON -->
+        <div id="pane-json" class="hidden">
+          <div class="liquid-glass p-6 rounded-3xl space-y-3">
+            <div class="flex items-center justify-between text-xs text-apple-gray font-mono pb-2 border-b border-black/5">
+              <span>application/json</span>
+              <button id="btn-copy-tab" class="font-semibold text-apple-blue hover:underline">Copy JSON</button>
             </div>
+            <pre id="json-box" class="p-4 rounded-2xl bg-white/70 text-slate-800 text-xs font-mono overflow-x-auto max-h-[550px] leading-relaxed border border-black/5"></pre>
+          </div>
+        </div>
 
+        <!-- PANE 4: API Snippets -->
+        <div id="pane-code" class="hidden">
+          <div class="liquid-glass p-6 rounded-3xl space-y-5 font-mono text-xs">
             <div>
-              <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-                <span class="text-indigo-400 font-bold"># Python (httpx async)</span>
-                <span class="text-[11px]">Python 3.12+</span>
-              </div>
-              <pre id="snippet-python" class="text-xs text-slate-200 bg-space-950 p-4 rounded-xl overflow-x-auto border border-white/5"></pre>
+              <span class="block text-slate-400 font-semibold mb-2"># cURL</span>
+              <pre id="code-curl" class="p-3.5 rounded-xl bg-white/80 border border-black/5 text-slate-800 overflow-x-auto"></pre>
             </div>
-
             <div>
-              <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-                <span class="text-purple-400 font-bold"># Node.js / Browser (fetch)</span>
-                <span class="text-[11px]">ESModules</span>
-              </div>
-              <pre id="snippet-js" class="text-xs text-slate-200 bg-space-950 p-4 rounded-xl overflow-x-auto border border-white/5"></pre>
+              <span class="block text-slate-400 font-semibold mb-2"># Python (httpx)</span>
+              <pre id="code-python" class="p-3.5 rounded-xl bg-white/80 border border-black/5 text-slate-800 overflow-x-auto"></pre>
+            </div>
+            <div>
+              <span class="block text-slate-400 font-semibold mb-2"># JavaScript (fetch)</span>
+              <pre id="code-js" class="p-3.5 rounded-xl bg-white/80 border border-black/5 text-slate-800 overflow-x-auto"></pre>
             </div>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- Custom Session Credentials Modal -->
-    <div id="modal-credentials" class="fixed inset-0 bg-space-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-      <div class="glass-panel rounded-3xl max-w-md w-full p-6 space-y-5 border border-white/10 shadow-2xl">
+    <!-- Session Drawer / Modal -->
+    <div id="modal-session" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+      <div class="liquid-glass rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="text-neon-cyan text-lg">🔑</span>
-            <h3 class="text-base font-bold text-white font-mono">Custom Session Tokens</h3>
-          </div>
-          <button id="btn-close-modal" class="text-slate-400 hover:text-white font-bold text-xl">&times;</button>
+          <h3 class="text-sm font-bold text-apple-dark">LinkedIn Session Credentials</h3>
+          <button id="btn-close-modal" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
         </div>
-        <p class="text-xs text-slate-300 leading-relaxed font-sans">
-          Supply your personal LinkedIn cookies to query any profile directly from your account. Cookies are saved strictly in your browser's <code class="text-neon-cyan">localStorage</code> and are never stored on the server.
+        <p class="text-xs text-apple-gray leading-relaxed">
+          Optionally paste your cookies to query profiles live from your account without saving them on any server.
         </p>
-        <div class="space-y-3 font-mono">
+        <div class="space-y-2.5 text-xs">
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">LI_AT Cookie</label>
-            <input id="modal-li-at" type="password" placeholder="AQED..." class="w-full glass-input text-xs text-white p-3 rounded-xl outline-none" />
+            <label class="block font-medium text-slate-700 mb-1">LI_AT</label>
+            <input id="input-li-at" type="password" placeholder="AQED..." class="w-full p-2.5 rounded-xl border border-black/10 bg-white/80 outline-none focus:border-apple-blue font-mono" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">JSESSIONID Cookie</label>
-            <input id="modal-jsessionid" type="text" placeholder="ajax:..." class="w-full glass-input text-xs text-white p-3 rounded-xl outline-none" />
+            <label class="block font-medium text-slate-700 mb-1">JSESSIONID</label>
+            <input id="input-jsessionid" type="text" placeholder="ajax:..." class="w-full p-2.5 rounded-xl border border-black/10 bg-white/80 outline-none focus:border-apple-blue font-mono" />
           </div>
         </div>
-        <div class="flex items-center justify-end gap-2.5 pt-2">
-          <button id="btn-clear-tokens" class="px-3.5 py-2 rounded-xl glass-panel text-xs font-mono font-semibold text-slate-400 hover:text-white">Clear</button>
-          <button id="btn-save-tokens" class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-white font-mono text-xs font-bold hover:opacity-90 transition">Save Tokens</button>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button id="btn-clear-session" class="px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 hover:bg-black/5">Clear</button>
+          <button id="btn-save-session" class="px-4 py-1.5 rounded-full bg-apple-blue text-white text-xs font-semibold hover:bg-apple-hover">Save</button>
         </div>
       </div>
     </div>
 
-    <!-- Cyberpunk Footer -->
-    <footer class="border-t border-white/5 py-8 text-center text-xs font-mono text-slate-500">
-      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p>IntelLens · LinkedIn Profile Intelligence API</p>
-        <p>Authored by <a href="https://github.com/rahul-1909" target="_blank" class="text-slate-300 font-bold hover:text-neon-cyan transition">Rahul (@rahul-1909)</a> · MIT License</p>
-      </div>
+    <!-- Apple-style Minimal Footer -->
+    <footer class="py-8 text-center text-xs text-apple-gray">
+      <p>LinkedIn Profile Intelligence API · Designed by <a href="https://github.com/rahul-1909" target="_blank" class="font-semibold text-slate-700 hover:underline">Rahul</a></p>
     </footer>
 
     <script src="./app.js"></script>
