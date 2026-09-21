@@ -25,6 +25,9 @@ dev = [
     "ruff>=0.8.0",
 ]
 
+[tool.vercel]
+entrypoint = "app.main:app"
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"
@@ -36,3 +39,5 @@ ignore = ["E501", "B008", "UP046"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+pythonpath = ["."]
+
