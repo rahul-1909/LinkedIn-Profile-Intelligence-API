@@ -54,7 +54,6 @@ def create_app() -> FastAPI:
 
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.add_middleware(SlowAPIMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -62,6 +61,25 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def catch_exceptions_middleware(request: Request, call_next):
+        try:
+            return await call_next(request)
+        except Exception as exc:
+            import traceback
+
+            logger.exception("Unhandled error processing request: %s", exc)
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "error": "internal_server_error",
+                    "detail": str(exc),
+                    "type": type(exc).__name__,
+                    "traceback": traceback.format_exc().splitlines(),
+                },
+            )
+
 
 
     @app.exception_handler(InvalidURLError)
