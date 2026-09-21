@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -45,16 +46,21 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+
+    is_serverless = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+
     app = FastAPI(
         title="LinkedIn Profile Intelligence API",
         description="High-performance extraction and intelligence engine for LinkedIn profiles powered by authenticated Voyager REST endpoints and real-time career analytics.",
         version="1.0.0",
-        lifespan=lifespan,
+        lifespan=None if is_serverless else lifespan,
     )
 
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.add_middleware(SlowAPIMiddleware)
+    if not is_serverless:
+        app.add_middleware(SlowAPIMiddleware)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -101,7 +107,7 @@ def create_app() -> FastAPI:
 
     app.include_router(router)
 
-    if WEB_DIR.exists():
+    if not is_serverless and WEB_DIR.exists():
         app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
 
     return app

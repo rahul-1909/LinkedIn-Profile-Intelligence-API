@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Request
@@ -14,6 +15,7 @@ from app.services.profile_service import ProfileService
 logger = logging.getLogger(__name__)
 
 
+
 def get_client_ip(request: Request) -> str:
     """Safely extract remote client IP with reverse-proxy and serverless support."""
     forwarded = request.headers.get("x-forwarded-for")
@@ -24,7 +26,10 @@ def get_client_ip(request: Request) -> str:
     return "127.0.0.1"
 
 
-limiter = Limiter(key_func=get_client_ip)
+limiter = Limiter(
+    key_func=get_client_ip,
+    enabled=not bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")),
+)
 router = APIRouter(prefix="/api", tags=["profile"])
 
 

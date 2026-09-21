@@ -299,7 +299,6 @@ def create_sandbox_profile_for_slug(slug: str) -> ProfileResponse:
     first_name, last_name = parse_name_from_slug(slug)
 
     return ProfileResponse(
-
         first_name=first_name,
         last_name=last_name,
         headline="Senior Staff Software Engineer & Cloud Architect | Distributed Systems & Scalable Infrastructure",
